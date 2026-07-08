@@ -1,0 +1,60 @@
+.cv-link {
+  color: var(--fluent-text);
+  text-decoration: none;
+  
+  &:hover {
+    color: var(--fluent-primary);
+    text-decoration: underline;
+  }
+}
+.active-filter {
+  background-color: var(--fluent-primary-light) !important;
+  border: 1px solid var(--fluent-primary) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--fluent-shadow);
+  
+  .text-muted {
+    color: var(--fluent-primary) !important;
+  }
+}
+.fs-7 {
+  font-size: 0.85rem;
+}
+.fs-8 {
+  font-size: 0.725rem;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.fluent-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fluent-modal-card {
+  background-color: var(--fluent-surface);
+  border: var(--fluent-card-border);
+  box-shadow: var(--fluent-shadow-lg);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 580px;
+  overflow: hidden;
+  
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--fluent-border);
+  }
+  
+  .modal-body {
+    padding: 1.5rem;
+  }
+}

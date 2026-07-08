@@ -1,0 +1,43 @@
+.emp-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--fluent-primary);
+}
+.fs-7 { font-size: 0.85rem; }
+.fs-8 { font-size: 0.725rem; }
+.cursor-pointer { cursor: pointer; }
+.chart-container {
+  width: 100%;
+}
+
+.fluent-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fluent-modal-card {
+  background-color: var(--fluent-surface);
+  border: var(--fluent-card-border);
+  box-shadow: var(--fluent-shadow-lg);
+  border-radius: 16px;
+  width: 90%;
+  overflow: hidden;
+  
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--fluent-border);
+  }
+  .modal-body {
+    padding: 1.5rem;
+  }
+}

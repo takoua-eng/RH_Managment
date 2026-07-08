@@ -1,0 +1,71 @@
+<div class="training-page">
+  <!-- Section Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-12">
+      <h2 class="fw-bold mb-1">Catalogue de Formations</h2>
+      <p class="text-muted mb-0">Développez les compétences techniques de vos collaborateurs avec nos parcours certifiants.</p>
+    </div>
+  </div>
+
+  <!-- Training courses grid -->
+  <div class="row g-4">
+    <div class="col-md-6 col-lg-4" *ngFor="let course of courses">
+      <div class="fluent-card course-card d-flex flex-column h-100">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <span class="fluent-badge" [ngClass]="getCourseBadgeClass(course.progression)">
+            {{ course.status }}
+          </span>
+          <div class="course-icon-box" [ngClass]="getCourseIconBg(course.name)">
+            <span class="material-symbols-outlined">{{ getCourseIcon(course.name) }}</span>
+          </div>
+        </div>
+
+        <h4 class="fw-bold mb-2 fs-5">{{ course.name }}</h4>
+        <p class="text-muted fs-7 flex-grow-1">{{ course.description }}</p>
+
+        <!-- Progress section -->
+        <div class="progress-section my-3" *ngIf="course.status !== 'Non commencé'">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted fs-8">Progression</span>
+            <span class="fw-bold fs-7">{{ course.progression }}%</span>
+          </div>
+          
+          <!-- Custom requested visual layout: Block indicators + Smooth Bar -->
+          <div class="ascii-bar font-monospace fs-8 mb-2">
+            {{ getAsciiProgressBar(course.progression) }}
+          </div>
+
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar" 
+                 [style.width.%]="course.progression" 
+                 [ngClass]="{'bg-success': course.progression === 100, 'bg-primary': course.progression < 100}"></div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="mt-auto border-top pt-3 d-flex gap-2">
+          <button *ngIf="course.status === 'Non commencé'" 
+                  (click)="enroll(course)" 
+                  class="fluent-btn-primary w-100 justify-content-center">
+            <span class="material-symbols-outlined">school</span>
+            S'inscrire
+          </button>
+          
+          <button *ngIf="course.status === 'En cours'" 
+                  (click)="study(course)" 
+                  class="fluent-btn-primary w-100 justify-content-center">
+            <span class="material-symbols-outlined">menu_book</span>
+            Continuer
+          </button>
+          
+          <button *ngIf="course.status === 'Terminé'" 
+                  (click)="downloadCertificate(course.name)" 
+                  class="fluent-btn-primary w-100 justify-content-center bg-success">
+            <span class="material-symbols-outlined text-white">workspace_premium</span>
+            Certificat
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

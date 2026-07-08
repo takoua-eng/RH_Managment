@@ -1,0 +1,187 @@
+<div class="dashboard-page">
+  <!-- Welcome Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+      <h2 class="fw-bold mb-1">Tableau de Bord RH</h2>
+      <p class="text-muted mb-0">Vue globale des performances de l'entreprise, des recrutements et de l'analyse IA.</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+      <a routerLink="/dashboard/recruitment" class="fluent-btn-primary">
+        <span class="material-symbols-outlined">add</span>
+        Nouveau Candidat
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Summary Cards (First Row) -->
+  <div class="row g-4 mb-4">
+    <!-- KPI 1: Total Employees -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="fluent-card kpi-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="kpi-title text-muted fw-medium fs-7">Employés</span>
+          <div class="kpi-icon-wrapper primary">
+            <span class="material-symbols-outlined">group</span>
+          </div>
+        </div>
+        <div class="kpi-value">{{ employeeCount }}</div>
+        <div class="kpi-footer text-success fs-8 fw-semibold mt-2">
+          <span class="material-symbols-outlined align-middle fs-6">trending_up</span>
+          +4% ce mois-ci
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 2: Pending Leaves -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="fluent-card kpi-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="kpi-title text-muted fw-medium fs-7">Congés en attente</span>
+          <div class="kpi-icon-wrapper warning">
+            <span class="material-symbols-outlined">pending_actions</span>
+          </div>
+        </div>
+        <div class="kpi-value">{{ pendingLeavesCount }}</div>
+        <div class="kpi-footer text-warning fs-8 fw-semibold mt-2">
+          <span class="material-symbols-outlined align-middle fs-6">schedule</span>
+          Requiert validation
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 3: Active Recruitments -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="fluent-card kpi-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="kpi-title text-muted fw-medium fs-7">Recrutements actifs</span>
+          <div class="kpi-icon-wrapper success">
+            <span class="material-symbols-outlined">assignment_ind</span>
+          </div>
+        </div>
+        <div class="kpi-value">{{ activeRecruitmentCount }}</div>
+        <div class="kpi-footer text-success fs-8 fw-semibold mt-2">
+          <span class="material-symbols-outlined align-middle fs-6">insights</span>
+          Score IA moyen : 92%
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 4: Documents Total -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="fluent-card kpi-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="kpi-title text-muted fw-medium fs-7">Documents archivés</span>
+          <div class="kpi-icon-wrapper info">
+            <span class="material-symbols-outlined">folder</span>
+          </div>
+        </div>
+        <div class="kpi-value">{{ documentsCount }}</div>
+        <div class="kpi-footer text-muted fs-8 mt-2">
+          Stockage utilisé : 74%
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts (Second Row) -->
+  <div class="row g-4 mb-4">
+    <!-- Recruitment Evolution Line Chart -->
+    <div class="col-lg-7">
+      <div class="fluent-card">
+        <h5 class="fw-bold mb-3 fs-6">Évolution des Recrutements</h5>
+        <div class="chart-container" style="min-height: 300px;">
+          <apx-chart
+            *ngIf="recruitmentChartOptions"
+            [series]="recruitmentChartOptions.series"
+            [chart]="recruitmentChartOptions.chart"
+            [xaxis]="recruitmentChartOptions.xaxis"
+            [stroke]="recruitmentChartOptions.stroke"
+            [colors]="recruitmentChartOptions.colors"
+            [tooltip]="recruitmentChartOptions.tooltip"
+            [dataLabels]="recruitmentChartOptions.dataLabels"
+            [grid]="recruitmentChartOptions.grid">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaves by Department Bar Chart -->
+    <div class="col-lg-5">
+      <div class="fluent-card">
+        <h5 class="fw-bold mb-3 fs-6">Congés par département</h5>
+        <div class="chart-container" style="min-height: 300px;">
+          <apx-chart
+            *ngIf="leaveChartOptions"
+            [series]="leaveChartOptions.series"
+            [chart]="leaveChartOptions.chart"
+            [xaxis]="leaveChartOptions.xaxis"
+            [plotOptions]="leaveChartOptions.plotOptions"
+            [colors]="leaveChartOptions.colors"
+            [dataLabels]="leaveChartOptions.dataLabels"
+            [grid]="leaveChartOptions.grid">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest Recruitments (Third Row) -->
+  <div class="row">
+    <div class="col-12">
+      <div class="fluent-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0 fs-6">Derniers recrutements (Pipeline IA)</h5>
+          <a routerLink="/dashboard/recruitment" class="text-btn text-primary border-0 bg-transparent fs-7 text-decoration-none fw-medium">Voir tout</a>
+        </div>
+        <div class="table-responsive">
+          <table class="fluent-table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Poste</th>
+                <th>Score IA</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let candidate of recentCandidates">
+                <td class="fw-semibold">{{ candidate.name }}</td>
+                <td>{{ candidate.position }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="fluent-badge" [ngClass]="getScoreClass(candidate.aiScore)">
+                      {{ candidate.aiScore }}%
+                    </span>
+                    <div class="progress flex-grow-1 d-none d-sm-flex" style="height: 4px; width: 60px;">
+                      <div class="progress-bar" 
+                           [ngClass]="getScoreBg(candidate.aiScore)"
+                           [style.width.%]="candidate.aiScore"></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="fluent-badge" 
+                        [ngClass]="{
+                          'success': candidate.status === 'Embauché',
+                          'primary': candidate.status === 'Entretien',
+                          'warning': candidate.status === 'Nouveau',
+                          'error': candidate.status === 'Rejeté'
+                        }">
+                    {{ candidate.status }}
+                  </span>
+                </td>
+                <td>
+                  <a [routerLink]="['/dashboard/ai-analysis']" class="btn btn-sm btn-light text-primary d-inline-flex align-items-center gap-1 border-0">
+                    <span class="material-symbols-outlined fs-6">psychology</span>
+                    Analyse
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

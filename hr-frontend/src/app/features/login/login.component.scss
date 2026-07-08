@@ -1,0 +1,53 @@
+.login-page {
+  min-height: 100vh;
+  width: 100vw;
+  background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 40%),
+              radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.06), transparent 40%),
+              var(--fluent-bg);
+  position: relative;
+}
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  background-color: var(--fluent-acrylic);
+}
+.brand-badge {
+  display: inline-flex;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background-color: var(--fluent-primary-light);
+  align-items: center;
+  justify-content: center;
+  
+  .brand-icon {
+    color: var(--fluent-primary);
+    font-size: 2.2rem;
+  }
+}
+.text-gradient {
+  background: linear-gradient(135deg, var(--fluent-primary), #4f46e5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.forgot-link {
+  color: var(--fluent-primary);
+  font-weight: 500;
+  
+  &:hover {
+    text-decoration: underline !important;
+  }
+}
+.demo-account {
+  background-color: var(--fluent-surface-hover);
+  border: 1px dashed var(--fluent-border);
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.fs-7 {
+  font-size: 0.8rem;
+}

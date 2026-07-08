@@ -1,0 +1,15 @@
+.list-group-item {
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &.active {
+    background-color: var(--fluent-primary-light) !important;
+    color: var(--fluent-primary) !important;
+    font-weight: 600;
+  }
+  &:hover:not(.active) {
+    background-color: var(--fluent-surface-hover) !important;
+  }
+}
+.fs-7 { font-size: 0.85rem; }
+.fs-8 { font-size: 0.725rem; }

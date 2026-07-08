@@ -1,0 +1,33 @@
+<aside [class.collapsed]="isCollapsed" class="fluent-sidebar">
+  <div class="sidebar-header d-flex align-items-center justify-content-between">
+    <div class="brand d-flex align-items-center gap-2" *ngIf="!isCollapsed">
+      <span class="material-symbols-outlined brand-icon">diversity_3</span>
+      <span class="brand-name">CorpFlow HR</span>
+    </div>
+    <div class="brand-collapsed" *ngIf="isCollapsed">
+      <span class="material-symbols-outlined brand-icon">diversity_3</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a *ngFor="let item of navItems" 
+       [routerLink]="item.path" 
+       routerLinkActive="active" 
+       [routerLinkActiveOptions]="{exact: item.path === '/dashboard'}"
+       class="nav-link-item"
+       [title]="item.label">
+      <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
+      <span class="nav-label" *ngIf="!isCollapsed">{{ item.label }}</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="divider"></div>
+    <button (click)="toggleCollapse()" class="collapse-btn" [title]="isCollapsed ? 'Développer' : 'Réduire'">
+      <span class="material-symbols-outlined">
+        {{ isCollapsed ? 'arrow_forward_ios' : 'arrow_back_ios' }}
+      </span>
+      <span class="btn-text" *ngIf="!isCollapsed">Réduire le menu</span>
+    </button>
+  </div>
+</aside>

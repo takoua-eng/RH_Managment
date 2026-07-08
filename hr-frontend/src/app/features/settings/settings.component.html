@@ -1,0 +1,134 @@
+<div class="settings-page">
+  <!-- Section Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="fw-bold mb-1">Paramètres du Portail</h2>
+      <p class="text-muted mb-0">Personnalisez votre compte, gérez les habilitations et configurez les préférences visuelles.</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Sidebar Tabs -->
+    <div class="col-md-3">
+      <div class="fluent-card p-0 overflow-hidden">
+        <div class="list-group list-group-flush">
+          <button (click)="activeTab = 'profile'" 
+                  [class.active]="activeTab === 'profile'" 
+                  class="list-group-item list-group-item-action border-0 px-3 py-3 d-flex align-items-center gap-2 fs-7 text-dark bg-transparent">
+            <span class="material-symbols-outlined">person</span>
+            Mon Profil
+          </button>
+          <button (click)="activeTab = 'roles'" 
+                  [class.active]="activeTab === 'roles'" 
+                  class="list-group-item list-group-item-action border-0 px-3 py-3 d-flex align-items-center gap-2 fs-7 text-dark bg-transparent">
+            <span class="material-symbols-outlined">admin_panel_settings</span>
+            Rôles & Habilitations
+          </button>
+          <button (click)="activeTab = 'theme'" 
+                  [class.active]="activeTab === 'theme'" 
+                  class="list-group-item list-group-item-action border-0 px-3 py-3 d-flex align-items-center gap-2 fs-7 text-dark bg-transparent">
+            <span class="material-symbols-outlined">palette</span>
+            Thème & Affichage
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Panel -->
+    <div class="col-md-9">
+      <!-- Profile settings -->
+      <div class="fluent-card" *ngIf="activeTab === 'profile'">
+        <h4 class="fw-bold mb-3 fs-5">Informations du Profil</h4>
+        <hr class="mb-4">
+        
+        <form (ngSubmit)="saveProfile()">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fs-7 fw-semibold">Nom</label>
+              <input type="text" class="fluent-input" [(ngModel)]="profile.lastName" name="lastName" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-7 fw-semibold">Prénom</label>
+              <input type="text" class="fluent-input" [(ngModel)]="profile.firstName" name="firstName" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-7 fw-semibold">Adresse Email</label>
+              <input type="email" class="fluent-input" [(ngModel)]="profile.email" name="email" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-7 fw-semibold">Poste</label>
+              <input type="text" class="fluent-input" [(ngModel)]="profile.position" name="position" disabled>
+            </div>
+            <div class="col-12 mt-4">
+              <button type="submit" class="fluent-btn-primary">Enregistrer les modifications</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Roles & Permissions Settings -->
+      <div class="fluent-card" *ngIf="activeTab === 'roles'">
+        <h4 class="fw-bold mb-3 fs-5">Gestion des Rôles</h4>
+        <p class="text-muted fs-7 mb-4">Visualisez et configurez les droits d'accès pour les groupes d'utilisateurs.</p>
+        <hr class="mb-4">
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm align-middle fs-7 text-dark">
+            <thead>
+              <tr class="table-light">
+                <th>Fonctionnalité</th>
+                <th>Administrateur</th>
+                <th>Recruteur</th>
+                <th>Employé</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Consulter le Dashboard</td>
+                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
+                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
+                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
+              </tr>
+              <tr>
+                <td>CRUD Employés & Salaires</td>
+                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
+                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
+                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
+              </tr>
+              <tr>
+                <td>Analyse de CV IA</td>
+                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
+                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
+                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
+              </tr>
+              <tr>
+                <td>Validation des Congés</td>
+                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
+                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
+                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Theme Settings -->
+      <div class="fluent-card" *ngIf="activeTab === 'theme'">
+        <h4 class="fw-bold mb-3 fs-5">Thème & Affichage</h4>
+        <p class="text-muted fs-7 mb-4 font-normal">Sélectionnez le mode visuel de l'application.</p>
+        <hr class="mb-4">
+
+        <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+          <div>
+            <h6 class="fw-bold mb-1 fs-6">Mode Sombre (Fluent Dark)</h6>
+            <p class="text-muted fs-7 mb-0">Basculez entre le thème clair (par défaut) et le thème sombre.</p>
+          </div>
+          <div class="form-check form-switch fs-4">
+            <input class="form-check-input" type="checkbox" role="switch" id="themeSwitch" 
+                   [(ngModel)]="darkMode" (ngModelChange)="onThemeToggle()">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

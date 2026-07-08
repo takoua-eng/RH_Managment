@@ -1,0 +1,221 @@
+<div class="documents-page">
+  <!-- Section Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <h2 class="fw-bold mb-1">Documents & Modèles</h2>
+      <p class="text-muted mb-0">Coffre-fort numérique de l'entreprise. Gérez les contrats, fiches de paie et attestations.</p>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+      <button (click)="openUploadModal()" class="fluent-btn-primary">
+        <span class="material-symbols-outlined">upload_file</span>
+        Ajouter un document
+      </button>
+    </div>
+  </div>
+
+  <!-- Folders Grid -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3" *ngFor="let folder of folders">
+      <div class="fluent-card interactive py-3 px-3 d-flex align-items-center gap-3"
+           [class.active-folder]="selectedFolder === folder.name"
+           (click)="selectFolder(folder.name)">
+        <div class="folder-icon-box" [ngClass]="folder.color">
+          <span class="material-symbols-outlined">folder</span>
+        </div>
+        <div class="overflow-hidden">
+          <span class="d-block fw-bold text-truncate fs-7">{{ folder.name }}s</span>
+          <span class="fs-8 text-muted">{{ getCountByFolder(folder.name) }} fichiers</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="fluent-card interactive py-3 px-3 d-flex align-items-center gap-3"
+           [class.active-folder]="selectedFolder === ''"
+           (click)="selectFolder('')">
+        <div class="folder-icon-box bg-secondary text-white">
+          <span class="material-symbols-outlined">folder_open</span>
+        </div>
+        <div>
+          <span class="d-block fw-bold fs-7">Tous</span>
+          <span class="fs-8 text-muted">{{ documents.length }} fichiers</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documents list -->
+  <div class="fluent-card p-0 overflow-hidden">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light-subtle">
+      <span class="fw-semibold">{{ selectedFolder ? selectedFolder + 's' : 'Tous les documents' }}</span>
+      <span class="fs-8 text-muted">{{ filteredDocs.length }} affichés</span>
+    </div>
+    <div class="table-responsive">
+      <table class="fluent-table mb-0">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Catégorie</th>
+            <th>Date d'ajout</th>
+            <th>Taille</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let doc of filteredDocs">
+            <td class="fw-semibold">
+              <div class="d-flex align-items-center gap-2">
+                <span class="material-symbols-outlined text-danger">picture_as_pdf</span>
+                <span class="text-truncate" style="max-width: 280px;">{{ doc.name }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="fluent-badge primary">{{ doc.type }}</span>
+            </td>
+            <td>{{ doc.dateUploaded }}</td>
+            <td class="text-muted">{{ doc.size }}</td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1">
+                <button (click)="previewDoc(doc)" class="action-btn text-primary" title="Visualiser">
+                  <span class="material-symbols-outlined fs-5">visibility</span>
+                </button>
+                <button (click)="downloadDoc(doc)" class="action-btn text-success" title="Télécharger">
+                  <span class="material-symbols-outlined fs-5">download</span>
+                </button>
+                <button (click)="deleteDoc(doc.id)" class="action-btn text-danger" title="Supprimer">
+                  <span class="material-symbols-outlined fs-5">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredDocs.length === 0">
+            <td colspan="5" class="text-center py-5 text-muted"> Aucun document dans ce dossier. </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Upload Document Modal -->
+  <div class="fluent-modal-overlay" *ngIf="showUploadModal">
+    <div class="fluent-modal-card" style="max-width: 450px;">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5">Ajouter un document</h4>
+        <button (click)="showUploadModal = false" class="border-0 bg-transparent text-muted cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form (ngSubmit)="uploadDocument()" class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Nom du document</label>
+          <input type="text" class="fluent-input" [(ngModel)]="uploadName" name="name" placeholder="Ex: Contrat_Jean_Dupont.pdf" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Catégorie</label>
+          <select class="fluent-input" [(ngModel)]="uploadCategory" name="category">
+            <option value="Contrat">Contrat</option>
+            <option value="Fiche de paie">Fiche de paie</option>
+            <option value="Diplôme">Diplôme</option>
+            <option value="Attestation">Attestation</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Fichier (simulé)</label>
+          <input type="file" class="fluent-input" (change)="onFileSelected($event)">
+        </div>
+        <div class="modal-footer mt-4 pt-3 d-flex justify-content-end gap-2">
+          <button type="button" (click)="showUploadModal = false" class="fluent-btn-secondary">Annuler</button>
+          <button type="submit" class="fluent-btn-primary">Ajouter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div class="fluent-modal-overlay" *ngIf="showPreviewModal" (click)="showPreviewModal = false">
+    <div class="fluent-modal-card document-preview-card" (click)="$event.stopPropagation()">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5">Prévisualisation du document</h4>
+        <div class="d-flex align-items-center gap-2 me-3">
+          <button (click)="downloadDoc(selectedDoc!)" class="btn btn-sm btn-light border d-flex align-items-center gap-1">
+            <span class="material-symbols-outlined fs-6">download</span>
+            Télécharger
+          </button>
+          <button (click)="showPreviewModal = false" class="border-0 bg-transparent text-muted cursor-pointer">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body bg-light-subtle overflow-y-auto" style="max-height: 500px;">
+        <!-- Premium paper mock template inside -->
+        <div class="a4-page shadow p-5 bg-white text-dark mx-auto my-3 text-start" style="max-width: 500px; font-family: Georgia, serif;">
+          <div class="border-bottom pb-4 mb-4 text-center">
+            <h4 class="fw-bold text-uppercase tracking-wider">CorpFlow Technologies</h4>
+            <p class="text-muted fs-8 mb-0">12 Rue de la Paix, 75002 Paris | info&#64;corpflow.com</p>
+          </div>
+          
+          <!-- Content varies by type -->
+          <ng-container [ngSwitch]="selectedDoc?.type">
+            <div *ngSwitchCase="'Contrat'">
+              <h5 class="fw-bold text-center mb-4 text-decoration-underline">CONTRAT DE TRAVAIL</h5>
+              <p class="fs-7">Entre les soussignés, la société **CorpFlow** et le collaborateur désigné ci-après :</p>
+              <p class="fs-7 fw-semibold mb-3">Nom du fichier : {{ selectedDoc?.name }}</p>
+              <p class="fs-7">Il a été convenu d'un contrat de travail à durée indéterminée (CDI) prenant effet à compter de la date de signature de la fiche de poste de démo.</p>
+              <p class="fs-7 mt-5 text-muted">Fait à Paris, le {{ selectedDoc?.dateUploaded }}</p>
+            </div>
+            <div *ngSwitchCase="'Fiche de paie'">
+              <h5 class="fw-bold text-center mb-4 text-decoration-underline">BULLETIN DE PAIE</h5>
+              <p class="fs-7">Période : Mois d'activité</p>
+              <p class="fs-7 fw-semibold">Salarié : Collaborateur CorpFlow</p>
+              <table class="table table-bordered table-sm fs-8 mt-4">
+                <thead>
+                  <tr>
+                    <th>Rubrique</th>
+                    <th>Base</th>
+                    <th>Taux</th>
+                    <th>Montant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Salaire de Base</td>
+                    <td>151.67 h</td>
+                    <td>25.00</td>
+                    <td>3 791.75 €</td>
+                  </tr>
+                  <tr>
+                    <td>Cotisations sociales</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-842.10 €</td>
+                  </tr>
+                  <tr class="table-active fw-bold">
+                    <td colspan="3">Net à payer</td>
+                    <td>2 949.65 €</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div *ngSwitchCase="'Diplôme'">
+              <h5 class="fw-bold text-center mb-4 text-decoration-underline">CERTIFICAT DE DIPLÔME</h5>
+              <p class="fs-7 text-center mt-5">Vu les examens passés avec succès,</p>
+              <h4 class="fw-bold text-center my-4">TITRE DE MASTER</h4>
+              <p class="fs-7 text-center">décerné à l'employé pour valider son parcours d'excellence académique en ingénierie logicielle.</p>
+              <p class="fs-7 text-center mt-5 text-muted">Délivré pour servir et valoir ce que de droit.</p>
+            </div>
+            <div *ngSwitchCase="'Attestation'">
+              <h5 class="fw-bold text-center mb-4 text-decoration-underline">ATTESTATION DE TRAVAIL</h5>
+              <p class="fs-7">La société **CorpFlow Technologies** atteste par la présente que le collaborateur concerné est actuellement employé au sein de notre structure en qualité de cadre technique.</p>
+              <p class="fs-7">Cette attestation est délivrée à la demande de l'intéressé pour servir et valoir ce que de droit.</p>
+              <p class="fs-7 mt-5 text-muted">Date : {{ selectedDoc?.dateUploaded }}</p>
+            </div>
+          </ng-container>
+
+          <div class="mt-5 pt-4 border-top d-flex justify-content-between fs-8 text-muted">
+            <span>Visa Direction RH</span>
+            <span>Signature Employé</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

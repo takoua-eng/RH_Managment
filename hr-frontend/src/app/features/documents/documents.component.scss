@@ -1,0 +1,78 @@
+.folder-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  span {
+    font-size: 1.35rem;
+  }
+  
+  &.blue { background-color: var(--fluent-primary-light); color: var(--fluent-primary); }
+  &.green { background-color: var(--fluent-success-light); color: var(--fluent-success); }
+  &.yellow { background-color: var(--fluent-warning-light); color: var(--fluent-warning); }
+  &.red { background-color: var(--fluent-error-light); color: var(--fluent-error); }
+}
+
+.active-folder {
+  background-color: var(--fluent-surface-hover) !important;
+  border: 1px solid var(--fluent-primary) !important;
+}
+
+.fs-7 { font-size: 0.85rem; }
+.fs-8 { font-size: 0.725rem; }
+.cursor-pointer { cursor: pointer; }
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: var(--fluent-surface-hover);
+  }
+}
+
+.fluent-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fluent-modal-card {
+  background-color: var(--fluent-surface);
+  border: var(--fluent-card-border);
+  box-shadow: var(--fluent-shadow-lg);
+  border-radius: 16px;
+  width: 90%;
+  overflow: hidden;
+  
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--fluent-border);
+  }
+  .modal-body {
+    padding: 1.5rem;
+  }
+}
+.document-preview-card {
+  max-width: 600px;
+}
+.tracking-wider {
+  letter-spacing: 1px;
+}

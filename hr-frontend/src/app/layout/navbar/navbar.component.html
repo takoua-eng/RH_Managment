@@ -1,0 +1,206 @@
+<header class="fluent-navbar d-flex align-items-center justify-content-between">
+
+  <div class="left-section d-flex align-items-center gap-3">
+    <button
+      (click)="toggleSidebar.emit()"
+      class="icon-btn"
+      title="Menu">
+
+      <span class="material-symbols-outlined">
+        menu
+      </span>
+
+    </button>
+
+    <h1 class="page-title fs-5 mb-0 fw-semibold text-truncate">
+      Portail RH
+    </h1>
+  </div>
+
+  <div class="right-section d-flex align-items-center gap-3">
+
+    <!-- Notifications -->
+
+    <div class="dropdown-wrapper">
+
+      <button
+        (click)="showNotifications = !showNotifications; showProfileMenu = false"
+        class="icon-btn position-relative"
+        title="Notifications">
+
+        <span class="material-symbols-outlined">
+          notifications
+        </span>
+
+        <span
+          class="notification-badge"
+          *ngIf="unreadCount > 0">
+
+          {{ unreadCount }}
+
+        </span>
+
+      </button>
+
+      <div
+        class="dropdown-panel notifications-panel"
+        *ngIf="showNotifications">
+
+        <div class="panel-header d-flex justify-content-between align-items-center">
+
+          <span class="fw-semibold">
+            Notifications
+          </span>
+
+          <button
+            (click)="markAllRead()"
+            class="text-btn text-primary border-0 bg-transparent fs-7">
+
+            Tout lire
+
+          </button>
+
+        </div>
+
+        <div class="panel-content">
+
+          <div
+            class="notification-item"
+            *ngFor="let note of notifications"
+            [class.unread]="note.unread"
+            (click)="readNote(note)">
+
+            <span class="material-symbols-outlined note-icon">
+              {{ note.icon }}
+            </span>
+
+            <div class="note-body">
+
+              <p class="mb-0 text-break">
+                {{ note.text }}
+              </p>
+
+              <span class="note-time">
+                {{ note.time }}
+              </span>
+
+            </div>
+
+            <div
+              class="unread-dot"
+              *ngIf="note.unread">
+            </div>
+
+          </div>
+
+          <div
+            class="empty-panel text-center py-4 text-muted"
+            *ngIf="notifications.length === 0">
+
+            Aucune notification
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Profile Menu -->
+
+    <div class="dropdown-wrapper">
+
+      <button
+        (click)="showProfileMenu = !showProfileMenu; showNotifications = false"
+        class="profile-trigger border-0 bg-transparent d-flex align-items-center gap-2">
+
+        <img
+          [src]="currentUser.photo"
+          alt="Photo"
+          class="profile-img">
+
+        <div class="profile-info text-start d-none d-md-block">
+
+          <div class="profile-name text-truncate">
+            {{ currentUser.name }}
+          </div>
+
+          <div class="profile-role text-truncate">
+            {{ currentUser.role }}
+          </div>
+
+        </div>
+
+        <span class="material-symbols-outlined profile-arrow">
+          expand_more
+        </span>
+
+      </button>
+
+      <div
+        class="dropdown-panel profile-panel"
+        *ngIf="showProfileMenu">
+
+        <div class="panel-user-header d-flex align-items-center gap-3">
+
+          <img
+            [src]="currentUser.photo"
+            alt="Photo"
+            class="profile-img-lg">
+
+          <div class="profile-info">
+
+            <div class="fw-semibold text-truncate">
+              {{ currentUser.name }}
+            </div>
+
+            <div class="fs-7 text-muted text-truncate">
+              {{ currentUser.email }}
+            </div>
+
+            <span class="fluent-badge primary mt-1">
+              {{ currentUser.role }}
+            </span>
+
+          </div>
+
+        </div>
+
+        <div class="panel-actions">
+
+          <button
+            (click)="navigateToSettings()"
+            class="action-item">
+
+            <span class="material-symbols-outlined">
+              settings
+            </span>
+
+            Paramètres du profil
+
+          </button>
+
+          <div class="divider"></div>
+
+          <button
+            (click)="logout()"
+            class="action-item text-danger">
+
+            <span class="material-symbols-outlined text-danger">
+              logout
+            </span>
+
+            Déconnexion
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</header>

@@ -1,0 +1,109 @@
+<div class="login-page d-flex align-items-center justify-content-center">
+  <div class="fluent-card login-card">
+    <!-- Brand Header -->
+    <div class="text-center mb-4">
+      <div class="brand-badge mb-2">
+        <span class="material-symbols-outlined brand-icon">diversity_3</span>
+      </div>
+      <h2 class="fw-bold mb-1 fs-4 text-gradient">CorpFlow HR</h2>
+      <p class="text-muted fs-7">Gestion Intelligente des Ressources Humaines</p>
+    </div>
+
+    <!-- Mode Toggle Login -->
+    <ng-container *ngIf="mode === 'login'">
+      <div class="mb-3">
+        <button type="button" (click)="loginWithKeycloak()" class="fluent-btn-primary w-100 justify-content-center py-2 d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined fs-5">security</span>
+          Se connecter avec Keycloak
+        </button>
+      </div>
+
+      <div class="d-flex align-items-center my-3">
+        <hr class="flex-grow-1 text-muted opacity-25">
+        <span class="mx-2 text-muted fs-8">ou connexion locale</span>
+        <hr class="flex-grow-1 text-muted opacity-25">
+      </div>
+
+      <form (ngSubmit)="handleLogin()">
+        <div class="mb-3">
+          <label for="email" class="form-label fs-7 fw-semibold">Adresse Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="fluent-input" 
+            placeholder="nom@corp.com" 
+            [(ngModel)]="email" 
+            required>
+        </div>
+        
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label for="password" class="form-label fs-7 fw-semibold mb-0">Mot de passe</label>
+            <a (click)="mode = 'forgot'" class="forgot-link text-decoration-none fs-7 cursor-pointer">Mot de passe oublié ?</a>
+          </div>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="fluent-input" 
+            placeholder="••••••••" 
+            [(ngModel)]="password" 
+            required>
+        </div>
+
+        <div class="form-check mb-4">
+          <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe" [(ngModel)]="rememberMe">
+          <label class="form-check-label fs-7 text-muted" for="rememberMe">
+            Se souvenir de moi
+          </label>
+        </div>
+
+        <button type="submit" class="fluent-btn-primary w-100 justify-content-center py-2" [disabled]="loading">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" *ngIf="loading"></span>
+          {{ loading ? 'Connexion en cours...' : 'Se connecter' }}
+        </button>
+      </form>
+
+      <!-- Quick access demo helper -->
+      <div class="demo-account mt-4 p-2 rounded text-center">
+        <span class="d-block text-muted fs-7 mb-1">💡 Mode Démo</span>
+        <button (click)="fillDemoCredentials()" class="btn btn-sm btn-outline-primary fs-7 px-3 py-1">Auto-remplir</button>
+      </div>
+    </ng-container>
+
+    <!-- Mode Toggle Forgot Password -->
+    <ng-container *ngIf="mode === 'forgot'">
+      <h3 class="fs-5 fw-bold mb-2">Réinitialiser le mot de passe</h3>
+      <p class="text-muted fs-7 mb-4">Entrez votre adresse email. Nous vous enverrons des instructions pour réinitialiser votre mot de passe.</p>
+
+      <form (ngSubmit)="handleForgot()">
+        <div class="mb-4">
+          <label for="forgotEmail" class="form-label fs-7 fw-semibold">Adresse Email</label>
+          <input 
+            type="email" 
+            id="forgotEmail" 
+            name="forgotEmail" 
+            class="fluent-input" 
+            placeholder="nom@corp.com" 
+            [(ngModel)]="forgotEmail" 
+            required>
+        </div>
+
+        <button type="submit" class="fluent-btn-primary w-100 justify-content-center py-2 mb-2" [disabled]="loading">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" *ngIf="loading"></span>
+          {{ loading ? 'Envoi...' : 'Envoyer les instructions' }}
+        </button>
+
+        <button type="button" (click)="mode = 'login'" class="fluent-btn-secondary w-100 justify-content-center py-2">
+          Retour à la connexion
+        </button>
+      </form>
+    </ng-container>
+
+    <!-- Feedback Alert -->
+    <div class="alert mt-3 py-2 px-3 fs-7" [ngClass]="alertClass" *ngIf="alertMsg">
+      {{ alertMsg }}
+    </div>
+  </div>
+</div>

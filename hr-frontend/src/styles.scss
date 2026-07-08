@@ -1,0 +1,214 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+:root {
+  --fluent-primary: #2563EB;
+  --fluent-primary-hover: #1D4ED8;
+  --fluent-primary-light: rgba(37, 99, 235, 0.1);
+  --fluent-success: #10B981;
+  --fluent-success-light: rgba(16, 185, 129, 0.1);
+  --fluent-error: #EF4444;
+  --fluent-error-light: rgba(239, 68, 68, 0.1);
+  --fluent-warning: #F59E0B;
+  --fluent-warning-light: rgba(245, 158, 11, 0.1);
+  
+  /* Light Theme */
+  --fluent-bg: #F8FAFC;
+  --fluent-surface: #FFFFFF;
+  --fluent-surface-hover: #F1F5F9;
+  --fluent-text: #1F2937;
+  --fluent-text-secondary: #6B7280;
+  --fluent-border: #E5E7EB;
+  --fluent-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --fluent-shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(0, 0, 0, 0.04);
+  --fluent-sidebar-bg: #FFFFFF;
+  --fluent-card-border: 1px solid rgba(229, 231, 235, 0.8);
+  --fluent-acrylic: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="dark"] {
+  /* Dark Theme */
+  --fluent-bg: #0B0F19;
+  --fluent-surface: #151C2C;
+  --fluent-surface-hover: #1E293B;
+  --fluent-text: #F3F4F6;
+  --fluent-text-secondary: #9CA3AF;
+  --fluent-border: #2D3748;
+  --fluent-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --fluent-shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.25);
+  --fluent-sidebar-bg: #111827;
+  --fluent-card-border: 1px solid rgba(55, 65, 81, 0.6);
+  --fluent-acrylic: rgba(21, 28, 44, 0.85);
+  --fluent-primary-light: rgba(37, 99, 235, 0.2);
+  --fluent-success-light: rgba(16, 185, 129, 0.2);
+  --fluent-error-light: rgba(239, 68, 68, 0.2);
+  --fluent-warning-light: rgba(245, 158, 11, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+body {
+  font-family: 'Segoe UI', 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--fluent-bg);
+  color: var(--fluent-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--fluent-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fluent-text-secondary);
+}
+
+/* Fluent Card and Design System Components */
+.fluent-card {
+  background-color: var(--fluent-surface);
+  border: var(--fluent-card-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--fluent-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  
+  &.interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--fluent-shadow-lg);
+    background-color: var(--fluent-surface-hover);
+    cursor: pointer;
+  }
+}
+
+.fluent-btn-primary {
+  background-color: var(--fluent-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 500;
+  transition: background-color 0.2s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    background-color: var(--fluent-primary-hover);
+    color: #ffffff;
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.fluent-btn-secondary {
+  background-color: transparent;
+  color: var(--fluent-text);
+  border: 1px solid var(--fluent-border);
+  border-radius: 6px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 500;
+  transition: background-color 0.2s, var(--fluent-border) 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    background-color: var(--fluent-surface-hover);
+    border-color: var(--fluent-text-secondary);
+    color: var(--fluent-text);
+  }
+}
+
+.fluent-input {
+  background-color: var(--fluent-surface);
+  border: 1px solid var(--fluent-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  color: var(--fluent-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--fluent-primary);
+    box-shadow: 0 0 0 3px var(--fluent-primary-light);
+  }
+}
+
+/* Badges */
+.fluent-badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  
+  &.success {
+    background-color: var(--fluent-success-light);
+    color: var(--fluent-success);
+  }
+  
+  &.primary {
+    background-color: var(--fluent-primary-light);
+    color: var(--fluent-primary);
+  }
+  
+  &.error {
+    background-color: var(--fluent-error-light);
+    color: var(--fluent-error);
+  }
+  
+  &.warning {
+    background-color: var(--fluent-warning-light);
+    color: var(--fluent-warning);
+  }
+}
+
+/* Tables */
+.fluent-table {
+  width: 100%;
+  border-collapse: collapse;
+  
+  th {
+    padding: 0.85rem 1rem;
+    font-weight: 600;
+    color: var(--fluent-text-secondary);
+    border-bottom: 2px solid var(--fluent-border);
+    font-size: 0.875rem;
+    text-align: left;
+  }
+  
+  td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--fluent-border);
+    color: var(--fluent-text);
+    font-size: 0.875rem;
+    vertical-align: middle;
+  }
+  
+  tr:hover td {
+    background-color: var(--fluent-surface-hover);
+  }
+}
+
+/* Alignment utilities */
+.material-symbols-outlined {
+  vertical-align: middle;
+  font-size: 1.25rem;
+}

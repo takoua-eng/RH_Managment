@@ -1,0 +1,195 @@
+<div class="leave-page">
+  <!-- Section Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <h2 class="fw-bold mb-1">Gestion des Congés</h2>
+      <p class="text-muted mb-0">Visualisez le planning des absences et validez les demandes en attente.</p>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+      <button (click)="openRequestModal()" class="fluent-btn-primary">
+        <span class="material-symbols-outlined">add</span>
+        Soumettre une demande
+      </button>
+    </div>
+  </div>
+
+  <!-- Stat counters -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="fluent-card py-2 px-3">
+        <span class="d-block text-muted fs-8 fw-semibold">Congés en attente</span>
+        <span class="fs-4 fw-bold text-warning">{{ pendingCount }}</span>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="fluent-card py-2 px-3">
+        <span class="d-block text-muted fs-8 fw-semibold">Absents aujourd'hui</span>
+        <span class="fs-4 fw-bold text-primary">3</span>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="fluent-card py-2 px-3">
+        <span class="d-block text-muted fs-8 fw-semibold">Approuvés ce mois</span>
+        <span class="fs-4 fw-bold text-success">14</span>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="fluent-card py-2 px-3">
+        <span class="d-block text-muted fs-8 fw-semibold">Taux de présence</span>
+        <span class="fs-4 fw-bold text-dark">96.8%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Visual Calendar (Left Side) -->
+    <div class="col-lg-6">
+      <div class="fluent-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0 fs-6">Calendrier des absences</h5>
+          <div class="d-flex align-items-center gap-2">
+            <span class="fw-semibold text-primary fs-7">Juin 2026</span>
+          </div>
+        </div>
+        
+        <div class="calendar-grid">
+          <!-- Days Header -->
+          <div class="calendar-header-day text-uppercase" *ngFor="let day of weekDays">{{ day }}</div>
+          
+          <!-- Days Cells -->
+          <div class="calendar-cell" 
+               *ngFor="let cell of calendarDays" 
+               [class.empty]="!cell.dayNumber"
+               [class.today]="cell.dayNumber === 17">
+            <span class="day-num" *ngIf="cell.dayNumber">{{ cell.dayNumber }}</span>
+            <div class="cell-leaves mt-1" *ngIf="cell.leaves.length > 0">
+              <div class="leave-dot" 
+                   *ngFor="let l of cell.leaves" 
+                   [ngClass]="getLeaveTypeClass(l.type)" 
+                   [title]="l.name + ' (' + l.type + ')'">
+                {{ l.name.split(' ')[0] }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="d-flex flex-wrap gap-3 mt-3 justify-content-center border-top pt-3 fs-8">
+          <span class="d-flex align-items-center gap-1">
+            <span class="legend-dot bg-primary"></span> Congé Payé
+          </span>
+          <span class="d-flex align-items-center gap-1">
+            <span class="legend-dot bg-danger"></span> Maladie
+          </span>
+          <span class="d-flex align-items-center gap-1">
+            <span class="legend-dot bg-warning"></span> RTT
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Requests Validation Table (Right Side) -->
+    <div class="col-lg-6">
+      <div class="fluent-card h-100 p-0 overflow-hidden d-flex flex-column">
+        <div class="p-3 border-bottom bg-light-subtle">
+          <h5 class="fw-bold mb-0 fs-6">Demandes de congés</h5>
+        </div>
+        
+        <div class="table-responsive flex-grow-1">
+          <table class="fluent-table">
+            <thead>
+              <tr>
+                <th>Employé</th>
+                <th>Période</th>
+                <th>Type</th>
+                <th>Statut</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let req of leaveRequests">
+                <td class="fw-semibold">{{ req.employeeName }}</td>
+                <td>
+                  <span class="d-block fs-8">{{ req.startDate }}</span>
+                  <span class="d-block fs-8 text-muted">au {{ req.endDate }}</span>
+                </td>
+                <td>
+                  <span class="fluent-badge" [ngClass]="getLeaveBadgeClass(req.type)">{{ req.type }}</span>
+                </td>
+                <td>
+                  <span class="fluent-badge" 
+                        [ngClass]="{
+                          'success': req.status === 'Approuvé',
+                          'warning': req.status === 'En attente',
+                          'error': req.status === 'Refusé'
+                        }">
+                    {{ req.status }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <div class="d-inline-flex gap-1" *ngIf="req.status === 'En attente'">
+                    <button (click)="approve(req.id)" class="action-btn text-success" title="Approuver">
+                      <span class="material-symbols-outlined fs-5">done</span>
+                    </button>
+                    <button (click)="reject(req.id)" class="action-btn text-danger" title="Refuser">
+                      <span class="material-symbols-outlined fs-5">close</span>
+                    </button>
+                  </div>
+                  <span class="text-muted fs-8" *ngIf="req.status !== 'En attente'">Traité</span>
+                </td>
+              </tr>
+              <tr *ngIf="leaveRequests.length === 0">
+                <td colspan="5" class="text-center py-5 text-muted">Aucune demande soumise.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit Request Modal -->
+  <div class="fluent-modal-overlay" *ngIf="showRequestModal">
+    <div class="fluent-modal-card" style="max-width: 460px;">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5">Nouvelle demande de congé</h4>
+        <button (click)="showRequestModal = false" class="border-0 bg-transparent text-muted cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form (ngSubmit)="submitRequest()" class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Employé</label>
+          <input type="text" class="fluent-input" [(ngModel)]="newRequest.employeeName" name="employeeName" placeholder="Ex: Jean Dupont" required>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label fs-7 fw-semibold">Date de début</label>
+            <input type="date" class="fluent-input" [(ngModel)]="newRequest.startDate" name="startDate" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label fs-7 fw-semibold">Date de fin</label>
+            <input type="date" class="fluent-input" [(ngModel)]="newRequest.endDate" name="endDate" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Type de congé</label>
+          <select class="fluent-input" [(ngModel)]="newRequest.type" name="type">
+            <option value="Payé">Congé Payé</option>
+            <option value="Maladie">Maladie</option>
+            <option value="RTT">RTT</option>
+            <option value="Sans solde">Sans solde</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Motif (Optionnel)</label>
+          <textarea class="fluent-input" [(ngModel)]="newRequest.reason" name="reason" rows="2" placeholder="Motif de l'absence..."></textarea>
+        </div>
+        <div class="modal-footer mt-4 pt-3 d-flex justify-content-end gap-2">
+          <button type="button" (click)="showRequestModal = false" class="fluent-btn-secondary">Annuler</button>
+          <button type="submit" class="fluent-btn-primary">Soumettre</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

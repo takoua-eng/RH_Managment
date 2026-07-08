@@ -1,0 +1,241 @@
+<div class="recruitment-page">
+  <!-- Section Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <h2 class="fw-bold mb-1">Recrutement & Candidats</h2>
+      <p class="text-muted mb-0">Pilotez le pipeline d'embauche et analysez les candidatures par l'IA.</p>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+      <button (click)="openAddModal()" class="fluent-btn-primary">
+        <span class="material-symbols-outlined">add</span>
+        Ajouter un Candidat
+      </button>
+    </div>
+  </div>
+
+  <!-- Pipeline Status Tabs (Summary Row) -->
+  <div class="row g-3 mb-4 text-center">
+    <div class="col-6 col-md-3">
+      <div class="fluent-card py-3 cursor-pointer" [class.active-filter]="statusFilter === 'Nouveau'" (click)="setStatusFilter('Nouveau')">
+        <span class="d-block text-muted fs-8 fw-semibold text-uppercase">Nouveaux</span>
+        <span class="fs-4 fw-bold text-warning">{{ getCountByStatus('Nouveau') }}</span>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="fluent-card py-3 cursor-pointer" [class.active-filter]="statusFilter === 'Entretien'" (click)="setStatusFilter('Entretien')">
+        <span class="d-block text-muted fs-8 fw-semibold text-uppercase">Entretiens</span>
+        <span class="fs-4 fw-bold text-primary">{{ getCountByStatus('Entretien') }}</span>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="fluent-card py-3 cursor-pointer" [class.active-filter]="statusFilter === 'Embauché'" (click)="setStatusFilter('Embauché')">
+        <span class="d-block text-muted fs-8 fw-semibold text-uppercase">Embauchés</span>
+        <span class="fs-4 fw-bold text-success">{{ getCountByStatus('Embauché') }}</span>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="fluent-card py-3 cursor-pointer" [class.active-filter]="statusFilter === 'Rejeté'" (click)="setStatusFilter('Rejeté')">
+        <span class="d-block text-muted fs-8 fw-semibold text-uppercase">Rejetés</span>
+        <span class="fs-4 fw-bold text-danger">{{ getCountByStatus('Rejeté') }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recruitment Table -->
+  <div class="fluent-card p-0 overflow-hidden">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light-subtle">
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-semibold">Candidatures</span>
+        <span class="fluent-badge primary" *ngIf="statusFilter">{{ statusFilter }}</span>
+      </div>
+      <button (click)="setStatusFilter('')" class="btn btn-sm btn-link text-decoration-none fs-7" *ngIf="statusFilter">
+        Réinitialiser les filtres
+      </button>
+    </div>
+    <div class="table-responsive">
+      <table class="fluent-table mb-0">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Poste visé</th>
+            <th>Fichier CV</th>
+            <th>Score IA</th>
+            <th>Statut</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let candidate of filteredCandidates">
+            <td>
+              <span class="fw-semibold">{{ candidate.name }}</span>
+            </td>
+            <td>{{ candidate.position }}</td>
+            <td>
+              <a (click)="viewCv(candidate)" class="cv-link d-inline-flex align-items-center gap-1 cursor-pointer">
+                <span class="material-symbols-outlined fs-6 text-danger">picture_as_pdf</span>
+                <span class="fs-7">{{ candidate.cvName }}</span>
+              </a>
+            </td>
+            <td>
+              <span class="fluent-badge" [ngClass]="getScoreClass(candidate.aiScore)">
+                {{ candidate.aiScore }}% Match
+              </span>
+            </td>
+            <td>
+              <span class="fluent-badge" 
+                    [ngClass]="{
+                      'success': candidate.status === 'Embauché',
+                      'primary': candidate.status === 'Entretien',
+                      'warning': candidate.status === 'Nouveau',
+                      'error': candidate.status === 'Rejeté'
+                    }">
+                {{ candidate.status }}
+              </span>
+            </td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1">
+                <button (click)="viewCv(candidate)" class="fluent-btn-secondary py-1 px-2 border-0 bg-transparent text-primary" title="Voir CV">
+                  <span class="material-symbols-outlined fs-5">visibility</span>
+                </button>
+                <button (click)="analyzeCandidate(candidate)" class="fluent-btn-secondary py-1 px-2 border-0 bg-transparent text-success" title="Analyser avec IA">
+                  <span class="material-symbols-outlined fs-5">psychology</span>
+                </button>
+                <button (click)="openInterviewModal(candidate)" class="fluent-btn-secondary py-1 px-2 border-0 bg-transparent text-warning" title="Planifier Entretien">
+                  <span class="material-symbols-outlined fs-5">event</span>
+                </button>
+                <button (click)="updateStatus(candidate.id, 'Embauché')" class="fluent-btn-secondary py-1 px-2 border-0 bg-transparent text-success" title="Embaucher" *ngIf="candidate.status !== 'Embauché'">
+                  <span class="material-symbols-outlined fs-5">done</span>
+                </button>
+                <button (click)="updateStatus(candidate.id, 'Rejeté')" class="fluent-btn-secondary py-1 px-2 border-0 bg-transparent text-danger" title="Rejeter" *ngIf="candidate.status !== 'Rejeté'">
+                  <span class="material-symbols-outlined fs-5">close</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredCandidates.length === 0">
+            <td colspan="6" class="text-center py-5 text-muted">
+              Aucun candidat correspondant.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add Candidate Modal -->
+  <div class="fluent-modal-overlay" *ngIf="showAddModal">
+    <div class="fluent-modal-card">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5">Nouveau Candidat</h4>
+        <button (click)="showAddModal = false" class="border-0 bg-transparent text-muted cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form (ngSubmit)="saveCandidate()" class="modal-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fs-7 fw-semibold">Nom Complet</label>
+            <input type="text" class="fluent-input" [(ngModel)]="newCandidate.name" name="name" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold">Poste</label>
+            <input type="text" class="fluent-input" [(ngModel)]="newCandidate.position" name="position" placeholder="Ex: Développeur Angular" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold">Nom du fichier CV (simulé)</label>
+            <input type="text" class="fluent-input" [(ngModel)]="newCandidate.cvName" name="cvName" placeholder="Ex: cv_sara.pdf" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold">Score IA initial (%)</label>
+            <input type="number" class="fluent-input" [(ngModel)]="newCandidate.aiScore" name="aiScore" min="0" max="100" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold">Statut Initial</label>
+            <select class="fluent-input" [(ngModel)]="newCandidate.status" name="status">
+              <option value="Nouveau">Nouveau</option>
+              <option value="Entretien">Entretien</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer mt-4 pt-3 d-flex justify-content-end gap-2">
+          <button type="button" (click)="showAddModal = false" class="fluent-btn-secondary">Annuler</button>
+          <button type="submit" class="fluent-btn-primary">Ajouter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Plan Interview Modal -->
+  <div class="fluent-modal-overlay" *ngIf="showInterviewModal">
+    <div class="fluent-modal-card" style="max-width: 450px;">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5 text-truncate">Planifier un entretien</h4>
+        <button (click)="showInterviewModal = false" class="border-0 bg-transparent text-muted cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form (ngSubmit)="scheduleInterview()" class="modal-body">
+        <p class="fs-7 text-muted mb-3">Programmation d'un entretien pour **{{ selectedCandidate?.name }}** ({{ selectedCandidate?.position }}).</p>
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Date</label>
+          <input type="date" class="fluent-input" [(ngModel)]="interviewDate" name="date" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Heure</label>
+          <input type="time" class="fluent-input" [(ngModel)]="interviewTime" name="time" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Interlocuteur RH / Technique</label>
+          <input type="text" class="fluent-input" [(ngModel)]="interviewInterviewer" name="interviewer" placeholder="Ex: Marc Dubois" required>
+        </div>
+        <div class="modal-footer mt-4 pt-3 d-flex justify-content-end gap-2">
+          <button type="button" (click)="showInterviewModal = false" class="fluent-btn-secondary">Annuler</button>
+          <button type="submit" class="fluent-btn-primary">Programmer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CV Visualizer Modal -->
+  <div class="fluent-modal-overlay" *ngIf="showCvModal" (click)="showCvModal = false">
+    <div class="fluent-modal-card" style="max-width: 600px;" (click)="$event.stopPropagation()">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5">Visualisation du CV</h4>
+        <button (click)="showCvModal = false" class="border-0 bg-transparent text-muted cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body bg-light rounded m-3 p-4 text-dark shadow-inner text-start">
+        <div class="border-bottom pb-3 mb-3 text-center text-sm-start">
+          <h3 class="fw-bold text-primary mb-1">{{ selectedCandidate?.name }}</h3>
+          <p class="mb-1 fw-semibold text-uppercase text-secondary fs-7">{{ selectedCandidate?.position }}</p>
+          <p class="text-muted fs-8 mb-0">Email: {{ selectedCandidate?.name?.toLowerCase()?.replace(' ', '.') }}&#64;email.com</p>
+        </div>
+        <div class="mb-4">
+          <h5 class="fw-bold fs-7 text-uppercase text-primary border-bottom pb-1">Compétences Techniques</h5>
+          <div class="d-flex flex-wrap gap-1 mt-2">
+            <span class="fluent-badge primary" *ngFor="let skill of selectedCandidate?.skills">{{ skill }}</span>
+          </div>
+        </div>
+        <div class="mb-4">
+          <h5 class="fw-bold fs-7 text-uppercase text-primary border-bottom pb-1">Forces clés détectées par l'IA</h5>
+          <ul class="list-unstyled mt-2">
+            <li class="fs-7 mb-1 d-flex align-items-center gap-2" *ngFor="let s of selectedCandidate?.strengths">
+              <span class="material-symbols-outlined text-success fs-6">done</span>
+              {{ s }}
+            </li>
+          </ul>
+        </div>
+        <div class="mb-2">
+          <h5 class="fw-bold fs-7 text-uppercase text-primary border-bottom pb-1">Points d'amélioration</h5>
+          <ul class="list-unstyled mt-2">
+            <li class="fs-7 mb-1 d-flex align-items-center gap-2" *ngFor="let w of selectedCandidate?.weaknesses">
+              <span class="material-symbols-outlined text-danger fs-6">warning</span>
+              Axe d'amélioration : {{ w }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

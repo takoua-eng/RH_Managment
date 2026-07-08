@@ -1,0 +1,140 @@
+<div class="evaluations-page">
+  <!-- Section Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+      <h2 class="fw-bold mb-1">Évaluations de Performance</h2>
+      <p class="text-muted mb-0">Suivez les compétences clés, consultez le graphique radar et soumettez des évaluations.</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+      <button (click)="openEvaluationModal()" class="fluent-btn-primary">
+        <span class="material-symbols-outlined">rate_review</span>
+        Nouvelle Évaluation
+      </button>
+    </div>
+  </div>
+
+  <!-- Employee Selection and Charts -->
+  <div class="row g-4 mb-4">
+    <!-- Selector and General Summary -->
+    <div class="col-md-4">
+      <div class="fluent-card h-100">
+        <h5 class="fw-bold mb-3 fs-6">Collaborateur</h5>
+        <div class="mb-4">
+          <label class="form-label fs-7 fw-semibold">Sélectionner un collaborateur</label>
+          <select class="fluent-input" [(ngModel)]="selectedEmployeeId" (ngModelChange)="onEmployeeChange()">
+            <option *ngFor="let emp of employees" [value]="emp.id">
+              {{ emp.firstName }} {{ emp.name }} ({{ emp.department }})
+            </option>
+          </select>
+        </div>
+
+        <div class="selected-emp-details text-center py-3" *ngIf="activeEmployee">
+          <img [src]="activeEmployee.photo" alt="Photo" class="emp-photo mb-3">
+          <h5 class="fw-bold mb-1">{{ activeEmployee.firstName }} {{ activeEmployee.name }}</h5>
+          <p class="text-muted fs-7 mb-2">{{ activeEmployee.position }}</p>
+          <span class="fluent-badge primary">{{ activeEmployee.department }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Radar Chart Display -->
+    <div class="col-md-8">
+      <div class="fluent-card h-100">
+        <h5 class="fw-bold mb-3 fs-6">Profil de Compétences (Radar Chart)</h5>
+        <div class="chart-container d-flex justify-content-center align-items-center" style="min-height: 280px;">
+          <apx-chart
+            *ngIf="radarChartOptions"
+            [series]="radarChartOptions.series"
+            [chart]="radarChartOptions.chart"
+            [xaxis]="radarChartOptions.xaxis"
+            [colors]="radarChartOptions.colors"
+            [stroke]="radarChartOptions.stroke"
+            [fill]="radarChartOptions.fill"
+            [markers]="radarChartOptions.markers"
+            [grid]="radarChartOptions.grid">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History of reviews -->
+  <div class="row">
+    <div class="col-12">
+      <div class="fluent-card">
+        <h5 class="fw-bold mb-3 fs-6">Historique des évaluations</h5>
+        <div class="table-responsive">
+          <table class="fluent-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Évaluateur</th>
+                <th>Moyenne Générale</th>
+                <th>Commentaires généraux</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let eval of employeeHistory">
+                <td>{{ eval.date }}</td>
+                <td class="fw-semibold">Direction RH</td>
+                <td>
+                  <span class="fluent-badge success">
+                    {{ getAverageScore(eval) | number:'1.1-1' }} / 50
+                  </span>
+                </td>
+                <td class="text-muted fs-7 text-wrap">{{ eval.comments }}</td>
+              </tr>
+              <tr *ngIf="employeeHistory.length === 0">
+                <td colspan="4" class="text-center py-4 text-muted">Aucune évaluation passée pour ce collaborateur.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Evaluation Modal -->
+  <div class="fluent-modal-overlay" *ngIf="showModal">
+    <div class="fluent-modal-card" style="max-width: 500px;">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5">Créer une évaluation</h4>
+        <button (click)="showModal = false" class="border-0 bg-transparent text-muted cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form (ngSubmit)="submitEvaluation()" class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fs-7 fw-semibold">Employé à évaluer</label>
+          <select class="fluent-input" [(ngModel)]="newEval.employeeName" name="employeeName" required>
+            <option *ngFor="let emp of employees" [value]="emp.firstName + ' ' + emp.name">
+              {{ emp.firstName }} {{ emp.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Score sliders (1 to 10 for each) -->
+        <div class="mb-2" *ngFor="let criteria of criterias">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label fs-7 fw-semibold mb-0">{{ criteria.label }}</label>
+            <span class="badge bg-primary fs-8">{{ getCriteriaValue(criteria.key) }} / 10</span>
+          </div>
+          <input type="range" class="form-range" min="1" max="10" 
+                 [name]="criteria.key" 
+                 [ngModel]="getCriteriaValue(criteria.key)" 
+                 (ngModelChange)="setCriteriaValue(criteria.key, $event)">
+        </div>
+
+        <div class="mb-3 mt-3">
+          <label class="form-label fs-7 fw-semibold">Commentaires globaux</label>
+          <textarea class="fluent-input" [(ngModel)]="newEval.comments" name="comments" rows="2" required></textarea>
+        </div>
+
+        <div class="modal-footer mt-4 pt-3 d-flex justify-content-end gap-2">
+          <button type="button" (click)="showModal = false" class="fluent-btn-secondary">Annuler</button>
+          <button type="submit" class="fluent-btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
