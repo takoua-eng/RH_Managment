@@ -11,6 +11,7 @@
     <groupId>com.esprit.microservice</groupId>
     <artifactId>hr-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <packaging>war</packaging>
     <name>hr-backend</name>
     <description>hr-backend</description>
     <url/>
@@ -85,9 +86,18 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Tomcat est fourni par le serveur (déploiement en WAR) : il n'est pas inclus dans le paquet -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
+        <!-- Nom fixe du paquet produit : target/hr-backend.war -->
+        <finalName>hr-backend</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
