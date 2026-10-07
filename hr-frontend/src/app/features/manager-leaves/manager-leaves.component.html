@@ -1,0 +1,194 @@
+<div class="manager-leaves-page">
+
+  <!-- ================================================================ -->
+  <!-- HEADER                                                            -->
+  <!-- ================================================================ -->
+  <div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="page-title mb-1">
+        <span class="material-symbols-outlined title-icon">calendar_today</span>
+        Gestion des Congés
+      </h1>
+      <p class="page-subtitle text-muted mb-0">
+      <p class="page-subtitle text-muted mb-0">
+        Gérez et validez les demandes de congé de votre équipe
+      </p>
+    </div>
+
+    <!-- Compteur à valider -->
+    <div class="pending-chip" *ngIf="pendingCount > 0">
+      <span class="material-symbols-outlined">schedule</span>
+      {{ pendingCount }} demande{{ pendingCount > 1 ? 's' : '' }} à valider
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- FILTRES PAR STATUT                                                -->
+  <!-- ================================================================ -->
+  <div class="filter-tabs mb-4 d-flex flex-wrap gap-2">
+    <button
+      *ngFor="let tab of tabs"
+      class="filter-tab"
+      [class.active]="activeTab === tab.value"
+      (click)="setTab(tab.value)"
+      [id]="'tab-' + tab.value">
+      <span class="material-symbols-outlined">{{ tab.icon }}</span>
+      {{ tab.label }}
+      <span class="tab-count" *ngIf="tab.count !== null">{{ tab.count }}</span>
+    </button>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- CHARGEMENT                                                        -->
+  <!-- ================================================================ -->
+  <div *ngIf="loading" class="py-5 text-center">
+    <div class="spinner-border text-warning" role="status"></div>
+    <p class="text-muted mt-3">Chargement des demandes...</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- LISTE VIDE                                                        -->
+  <!-- ================================================================ -->
+  <div *ngIf="!loading && filtered.length === 0" class="empty-state text-center py-5">
+    <div class="empty-icon-wrapper mx-auto mb-3">
+      <span class="material-symbols-outlined">event_busy</span>
+    </div>
+    <h3 class="fw-semibold mb-1">Aucune demande</h3>
+    <p class="text-muted">Aucun congé dans cette catégorie pour votre équipe.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- TABLEAU DES DEMANDES                                              -->
+  <!-- ================================================================ -->
+  <div *ngIf="!loading && filtered.length > 0" class="leaves-table-wrapper shadow-sm">
+    <table class="leaves-table w-100">
+      <thead>
+        <tr>
+          <th>Employé</th>
+          <th>Type</th>
+          <th>Période</th>
+          <th>Durée</th>
+          <th>Statut</th>
+          <th>Actions / Motif</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let leave of filtered" [id]="'leave-row-' + leave.id" [class.pending-row]="leave.status === 'PENDING'">
+
+          <!-- Employé -->
+          <td>
+            <div class="employee-cell d-flex align-items-center gap-2">
+              <div class="emp-avatar">{{ getInitials(leave.employeeName) }}</div>
+              <span class="emp-name fw-semibold">{{ leave.employeeName }}</span>
+            </div>
+          </td>
+
+          <!-- Type -->
+          <td>
+            <span class="type-badge" [ngClass]="'type-' + leave.type.toLowerCase()">
+              {{ getTypeLabel(leave.type) }}
+            </span>
+          </td>
+
+          <!-- Période -->
+          <td>
+            <div class="date-cell">
+              <span class="date-start">{{ formatDate(leave.startDate) }}</span>
+              <span class="date-sep material-symbols-outlined">arrow_forward</span>
+              <span class="date-end">{{ formatDate(leave.endDate) }}</span>
+            </div>
+          </td>
+
+          <!-- Durée -->
+          <td>
+            <span class="duration-badge">{{ getDays(leave.startDate, leave.endDate) }}j</span>
+          </td>
+
+          <!-- Statut -->
+          <td>
+            <span class="status-badge" [ngClass]="'status-' + leave.status.toLowerCase().replace('_', '-')">
+              <span class="status-dot"></span>
+              {{ getStatusLabel(leave.status) }}
+            </span>
+          </td>
+
+          <!-- Actions ou Motif -->
+          <td>
+            <div class="action-btns d-flex gap-2" *ngIf="leave.status === 'PENDING'">
+              <button
+                class="btn-approve"
+                (click)="approve(leave)"
+                [disabled]="actionInProgress"
+                title="Approuver">
+                <span class="material-symbols-outlined">check_circle</span>
+                Approuver
+              </button>
+              <button
+                class="btn-reject"
+                (click)="openRejectModal(leave)"
+                [disabled]="actionInProgress"
+                title="Refuser">
+                <span class="material-symbols-outlined">cancel</span>
+                Refuser
+              </button>
+            </div>
+            <span class="reason-text text-muted" *ngIf="leave.status !== 'PENDING'">{{ leave.reason || '—' }}</span>
+          </td>
+
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ================================================================ -->
+  <!-- MODAL REFUS                                                       -->
+  <!-- ================================================================ -->
+  <div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <span class="material-symbols-outlined text-danger">cancel</span>
+          Refuser la demande
+        </h3>
+        <button (click)="closeRejectModal()" class="modal-close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedLeave">
+        <p class="text-muted mb-3">
+          Vous allez refuser la demande de congé de
+          <strong>{{ selectedLeave.employeeName }}</strong>
+          du {{ formatDate(selectedLeave.startDate) }} au {{ formatDate(selectedLeave.endDate) }}.
+        </p>
+        <label class="modal-label">Motif du refus</label>
+        <textarea
+          class="modal-textarea"
+          [(ngModel)]="rejectReason"
+          placeholder="Précisez le motif du refus (optionnel)..."
+          rows="3"
+          id="reject-reason-textarea">
+        </textarea>
+      </div>
+
+      <div class="modal-footer d-flex justify-content-end gap-2">
+        <button (click)="closeRejectModal()" class="btn-cancel">Annuler</button>
+        <button (click)="confirmReject()" class="btn-confirm-reject" [disabled]="actionInProgress">
+          <span class="material-symbols-outlined">cancel</span>
+          Confirmer le refus
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================================================================ -->
+  <!-- TOAST NOTIFICATION                                                -->
+  <!-- ================================================================ -->
+  <div class="toast-notification" *ngIf="toast.show" [ngClass]="toast.type">
+    <span class="material-symbols-outlined">{{ toast.icon }}</span>
+    {{ toast.message }}
+  </div>
+
+</div>

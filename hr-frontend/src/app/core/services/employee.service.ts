@@ -8,6 +8,7 @@ import { Employee, EmployeeRequest } from '../models/employee.model';
   providedIn: 'root'
 })
 export class EmployeeService {
+
   private apiUrl = 'http://localhost:8087/api/employees';
 
   private employeesSubject = new BehaviorSubject<Employee[]>([]);
@@ -21,110 +22,352 @@ export class EmployeeService {
       name: 'IT',
       employeesCount: 25,
       manager: 'Thomas Rousseau',
-      budget: '750,000 €',
-      description: 'Développement logiciel, infrastructures réseaux, support informatique et projets IA.'
+      budget: '750,000 TND',
+      description:
+        'Développement logiciel, infrastructures réseaux, support informatique et projets IA.'
     },
     {
       name: 'RH',
       employeesCount: 10,
       manager: 'Marc Dubois',
-      budget: '180,000 €',
-      description: 'Gestion des talents, paie, recrutement, formations et bien-être des collaborateurs.'
+      budget: '180,000 TND',
+      description:
+        'Gestion des talents, paie, recrutement, formations et bien-être des collaborateurs.'
     },
     {
       name: 'Marketing',
       employeesCount: 18,
       manager: 'Camille Laurent',
-      budget: '320,000 €',
-      description: 'Communication externe, image de marque, réseaux sociaux et stratégies de croissance.'
+      budget: '320,000 TND',
+      description:
+        'Communication externe, image de marque, réseaux sociaux et stratégies de croissance.'
     },
     {
       name: 'Finance',
       employeesCount: 12,
       manager: 'Youssef Kabbaj',
-      budget: '450,000 €',
-      description: 'Comptabilité générale, facturation, contrôle budgétaire et planification financière.'
+      budget: '450,000 TND',
+      description:
+        'Comptabilité générale, facturation, contrôle budgétaire et planification financière.'
     }
   ];
 
   constructor(private http: HttpClient) {
-    const savedDeps = localStorage.getItem('hr_departments');
+
+    const savedDeps =
+      localStorage.getItem('hr_departments');
+
     if (savedDeps) {
-      this.departmentsSubject.next(JSON.parse(savedDeps));
+
+      try {
+        this.departmentsSubject.next(
+          JSON.parse(savedDeps)
+        );
+      } catch (error) {
+
+        console.error(
+          'Erreur lors du chargement des départements depuis localStorage',
+          error
+        );
+
+        this.departmentsSubject.next(
+          this.defaultDepartments
+        );
+      }
+
     } else {
-      localStorage.setItem('hr_departments', JSON.stringify(this.defaultDepartments));
-      this.departmentsSubject.next(this.defaultDepartments);
+
+      localStorage.setItem(
+        'hr_departments',
+        JSON.stringify(this.defaultDepartments)
+      );
+
+      this.departmentsSubject.next(
+        this.defaultDepartments
+      );
     }
 
-    // Automatically load employees on startup to populate BehaviorSubject
-    this.loadInitialEmployees();
+    /*
+     * IMPORTANT :
+     * Ne pas charger automatiquement tous les employés ici.
+     *
+     * Avant :
+     * this.loadInitialEmployees();
+     *
+     * Cela provoquait :
+     * GET /api/employees?page=0&size=100
+     *
+     * et donc 403 pour le rôle EMPLOYEE.
+     */
   }
 
-  private loadInitialEmployees() {
-    this.getEmployees(0, 100, '').subscribe({
-      next: () => { },
-      error: (err) => {
-        console.error('Failed to load initial employees in EmployeeService constructor:', err);
-      }
-    });
+
+  // =========================================================
+  // GET CURRENT EMPLOYEE
+  // =========================================================
+
+  getCurrentEmployee(): Observable<Employee> {
+    return this.http.get<Employee>(
+      `${this.apiUrl}/me`
+    );
   }
+
+  updateMyProfile(employee: EmployeeRequest): Observable<Employee> {
+    return this.http.put<Employee>(
+      `${this.apiUrl}/me`,
+      employee
+    );
+  }
+
+
+  // =========================================================
+  // GET ALL EMPLOYEES
+  // ADMIN / RH / MANAGER
+  // =========================================================
 
   getEmployees(): Employee[];
-  getEmployees(page: number, size: number, search: string): Observable<any>;
-  getEmployees(page?: number, size?: number, search?: string): any {
-    if (page === undefined) {
+  getEmployees(
+    page: number,
+    size: number,
+    search: string
+  ): Observable<any>;
+
+  getEmployees(
+    page?: number,
+    size?: number,
+    search?: string
+  ): Observable<any> | Employee[] {
+
+    /*
+     * Sans paramètres :
+     * retourne les employés déjà présents
+     * dans le BehaviorSubject.
+     */
+    if (
+      page === undefined &&
+      size === undefined &&
+      search === undefined
+    ) {
       return this.employeesSubject.value;
     }
 
     let params = new HttpParams();
+
     if (page !== undefined && page !== null) {
-      params = params.set('page', page.toString());
-    }
-    if (size !== undefined && size !== null) {
-      params = params.set('size', size.toString());
-    }
-    if (search) {
-      params = params.set('search', search);
+      params = params.set(
+        'page',
+        page.toString()
+      );
     }
 
-    return this.http.get<any>(this.apiUrl, { params }).pipe(
-      tap(res => {
-        if (res && res.content) {
-          const mapped = res.content.map((emp: any) => ({
-            ...emp,
-            name: emp.lastName, // legacy support for evaluation page and other components
-            photo: emp.photoUrl ? this.getPhotoUrl(emp.id) : 'https://media..com/id//fr/vectoriel/ic%C3%B4ne-de-profil-utilisateur-avatar-ou-ic%C3%B4ne-de-personne-photo-de-profil-symbole-portrait.jpg?s=2048x2048&w=is&k=20&c=m5Xw61esitYlBSQxzxT0hbHtFjVCl526qoLTX1vbvwk=', // legacy support
-            salary: emp.salary || 45000 // legacy support
-          }));
-          this.employeesSubject.next(mapped);
-        }
-      })
+    if (size !== undefined && size !== null) {
+      params = params.set(
+        'size',
+        size.toString()
+      );
+    }
+
+    if (search && search.trim().length > 0) {
+      params = params.set(
+        'search',
+        search.trim()
+      );
+    }
+
+    return this.http
+      .get<any>(this.apiUrl, { params })
+      .pipe(
+
+        tap(res => {
+
+          if (
+            res &&
+            Array.isArray(res.content)
+          ) {
+
+            const mapped =
+              res.content.map(
+                (emp: any) => ({
+
+                  ...emp,
+
+                  // Support legacy
+                  name:
+                    emp.lastName,
+
+                  // Support legacy
+                  photo:
+                    emp.photoUrl
+                      ? this.getPhotoUrl(emp.id)
+                      : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+
+                  // Support legacy
+                  salary:
+                    emp.salary || 45000
+                })
+              );
+
+            this.employeesSubject.next(
+              mapped
+            );
+          }
+        })
+      );
+  }
+
+
+  // =========================================================
+  // GET EMPLOYEE BY ID
+  // =========================================================
+
+  getEmployeeById(
+    id: number
+  ): Observable<Employee> {
+
+    return this.http.get<Employee>(
+      `${this.apiUrl}/${id}`
     );
   }
 
-  getEmployeeById(id: number): Observable<Employee> {
-    return this.http.get<Employee>(`${`${this.apiUrl}/${id}`}`);
+
+  // =========================================================
+  // CREATE EMPLOYEE
+  // =========================================================
+
+  createEmployee(
+    employee: EmployeeRequest
+  ): Observable<Employee> {
+
+    return this.http.post<Employee>(
+      this.apiUrl,
+      employee
+    );
   }
 
-  createEmployee(employee: EmployeeRequest): Observable<Employee> {
-    return this.http.post<Employee>(this.apiUrl, employee);
+
+  // =========================================================
+  // UPDATE EMPLOYEE
+  // =========================================================
+
+  updateEmployee(
+    id: number,
+    employee: EmployeeRequest
+  ): Observable<Employee> {
+
+    return this.http.put<Employee>(
+      `${this.apiUrl}/${id}`,
+      employee
+    );
   }
 
-  updateEmployee(id: number, employee: EmployeeRequest): Observable<Employee> {
-    return this.http.put<Employee>(`${`${this.apiUrl}/${id}`}`, employee);
+
+  // =========================================================
+  // DELETE EMPLOYEE
+  // =========================================================
+
+  deleteEmployee(
+    id: number
+  ): Observable<void> {
+
+    return this.http.delete<void>(
+      `${this.apiUrl}/${id}`
+    );
   }
 
-  deleteEmployee(id: number): Observable<void> {
-    return this.http.delete<void>(`${`${this.apiUrl}/${id}`}`);
-  }
 
-  uploadPhoto(id: number, file: File): Observable<any> {
+  // =========================================================
+  // UPLOAD PHOTO
+  // =========================================================
+
+  uploadPhoto(
+    id: number,
+    file: File
+  ): Observable<any> {
+
     const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post<any>(`${`${this.apiUrl}/${id}/photo`}`, formData);
+
+    formData.append(
+      'file',
+      file
+    );
+
+    return this.http.post<any>(
+      `${this.apiUrl}/${id}/photo`,
+      formData
+    );
   }
 
-  getPhotoUrl(id: number): string {
-    return `${`${this.apiUrl}/${id}/photo`}`;
+  uploadMyPhoto(
+    file: File
+  ): Observable<any> {
+
+    const formData = new FormData();
+
+    formData.append(
+      'file',
+      file
+    );
+
+    return this.http.post<any>(
+      `${this.apiUrl}/me/photo`,
+      formData
+    );
+  }
+
+
+  // =========================================================
+  // PHOTO URL
+  // =========================================================
+
+  getPhotoUrl(
+    id: number
+  ): string {
+
+    return `${this.apiUrl}/${id}/photo`;
+  }
+
+
+  // =========================================================
+  // LISTE DES MANAGERS (dropdown)
+  // =========================================================
+
+  /**
+   * Retourne tous les employés pouvant être désignés managers
+   * GET /api/employees/managers
+   */
+  getManagers(): Observable<Employee[]> {
+    return this.http.get<Employee[]>(`${this.apiUrl}/managers`);
+  }
+
+
+  // =========================================================
+  // AFFECTER UN MANAGER À UN EMPLOYÉ
+  // =========================================================
+
+  /**
+   * Affecte ou change le manager d'un employé.
+   * managerId = null → désaffectation
+   * PUT /api/employees/{id}/manager
+   */
+  assignManager(employeeId: number, managerId: number | null): Observable<Employee> {
+    return this.http.put<Employee>(
+      `${this.apiUrl}/${employeeId}/manager`,
+      { managerId }
+    );
+  }
+
+
+  // =========================================================
+  // ÉQUIPE D'UN MANAGER (vue Admin/RH)
+  // =========================================================
+
+  /**
+   * Liste des employés rattachés à un manager.
+   * GET /api/employees/by-manager/{managerId}/team
+   */
+  getManagerTeam(managerId: number): Observable<Employee[]> {
+    return this.http.get<Employee[]>(
+      `${this.apiUrl}/by-manager/${managerId}/team`
+    );
   }
 }

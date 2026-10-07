@@ -1,0 +1,300 @@
+// =========================================================
+// BREADCRUMB
+// =========================================================
+
+.breadcrumb {
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: #d97706;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: background 0.15s;
+
+    .material-symbols-outlined { font-size: 1.1rem; }
+
+    &:hover { background: rgba(245, 158, 11, 0.08); }
+  }
+
+  .bc-current {
+    font-size: 0.875rem;
+    color: var(--fluent-text);
+    font-weight: 500;
+  }
+}
+
+
+// =========================================================
+// CARTE IDENTITÉ
+// =========================================================
+
+.identity-card {
+  background: var(--fluent-surface);
+  border: 1px solid var(--fluent-border);
+  border-radius: 16px;
+  padding: 32px 24px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+  }
+
+  .identity-avatar-wrapper {
+    width: 100px;
+    height: 100px;
+    position: relative;
+
+    .identity-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .identity-initials {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .identity-status-dot {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2.5px solid #fff;
+
+      &.status-active   { background: #10b981; }
+      &.status-inactive { background: #94a3b8; }
+      &.status-leave    { background: #f59e0b; }
+    }
+  }
+
+  .identity-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--fluent-text);
+  }
+
+  .identity-position {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .dept-badge {
+    background: rgba(59, 130, 246, 0.08);
+    color: #2563eb;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .hire-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #64748b;
+  }
+}
+
+
+// =========================================================
+// BADGES STATUT
+// =========================================================
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  &.status-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+  }
+
+  &.status-inactive {
+    background: rgba(148, 163, 184, 0.15);
+    color: #64748b;
+  }
+
+  &.status-leave {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+  }
+}
+
+
+// =========================================================
+// CARTES D'INFORMATION
+// =========================================================
+
+.info-card {
+  background: var(--fluent-surface);
+  border: 1px solid var(--fluent-border);
+  border-radius: 14px;
+  overflow: hidden;
+
+  .info-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: rgba(245, 158, 11, 0.04);
+    border-bottom: 1px solid var(--fluent-border);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--fluent-text);
+
+    .material-symbols-outlined {
+      color: #f59e0b;
+      font-size: 1.2rem;
+    }
+  }
+}
+
+.info-grid {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  .info-label {
+    min-width: 120px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-top: 2px;
+  }
+
+  .info-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--fluent-text);
+    font-weight: 500;
+  }
+
+  .link-value {
+    color: #2563eb;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+      color: #1d4ed8;
+    }
+  }
+}
+
+
+// =========================================================
+// KPI MINI-CARDS
+// =========================================================
+
+.kpi-mini {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--fluent-border);
+  background: var(--fluent-surface);
+
+  .kpi-icon {
+    font-size: 2rem;
+  }
+
+  .kpi-num {
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .kpi-lbl {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    margin-top: 3px;
+  }
+
+  &.kpi-leaves {
+    .kpi-icon { color: #10b981; }
+    .kpi-num  { color: #059669; }
+  }
+
+  &.kpi-status {
+    .kpi-icon { color: #f59e0b; }
+    .kpi-num  { color: #d97706; font-size: 1rem; }
+  }
+}
+
+
+// =========================================================
+// BOUTON RETOUR SOLIDE
+// =========================================================
+
+.btn-amber-solid {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 10px;
+  background: #f59e0b;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover { background: #d97706; }
+
+  .material-symbols-outlined { font-size: 1.1rem; }
+}

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { RecruitmentService } from '../../core/services/recruitment.service';
-import { Candidate } from '../../core/models/interfaces';
+import { MockCandidate as Candidate } from '../../core/models/interfaces';
 
 @Component({
   selector: 'app-recruitment',

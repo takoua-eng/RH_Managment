@@ -3,7 +3,7 @@
   <div class="row mb-4">
     <div class="col-12">
       <h2 class="fw-bold mb-1">Paramètres du Portail</h2>
-      <p class="text-muted mb-0">Personnalisez votre compte, gérez les habilitations et configurez les préférences visuelles.</p>
+      <p class="text-muted mb-0">Personnalisez votre compte, gérez vos informations personnelles et les préférences visuelles.</p>
     </div>
   </div>
 
@@ -18,12 +18,6 @@
             <span class="material-symbols-outlined">person</span>
             Mon Profil
           </button>
-          <button (click)="activeTab = 'roles'" 
-                  [class.active]="activeTab === 'roles'" 
-                  class="list-group-item list-group-item-action border-0 px-3 py-3 d-flex align-items-center gap-2 fs-7 text-dark bg-transparent">
-            <span class="material-symbols-outlined">admin_panel_settings</span>
-            Rôles & Habilitations
-          </button>
           <button (click)="activeTab = 'theme'" 
                   [class.active]="activeTab === 'theme'" 
                   class="list-group-item list-group-item-action border-0 px-3 py-3 d-flex align-items-center gap-2 fs-7 text-dark bg-transparent">
@@ -37,78 +31,172 @@
     <!-- Content Panel -->
     <div class="col-md-9">
       <!-- Profile settings -->
-      <div class="fluent-card" *ngIf="activeTab === 'profile'">
-        <h4 class="fw-bold mb-3 fs-5">Informations du Profil</h4>
-        <hr class="mb-4">
-        
-        <form (ngSubmit)="saveProfile()">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fs-7 fw-semibold">Nom</label>
-              <input type="text" class="fluent-input" [(ngModel)]="profile.lastName" name="lastName" required>
+      <div class="profile-tab-content" *ngIf="activeTab === 'profile'">
+        <div *ngIf="loading" class="py-5 text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+          </div>
+          <p class="text-muted mt-2">Chargement de vos informations...</p>
+        </div>
+
+        <div class="row g-4" *ngIf="!loading">
+          <!-- Success/Error Alert banners -->
+          <div class="col-12" *ngIf="successMessage || errorMessage">
+            <div *ngIf="successMessage" class="alert alert-success d-flex align-items-center gap-2 border-0 shadow-sm" role="alert">
+              <span class="material-symbols-outlined fs-5">check_circle</span>
+              <div class="fs-7 fw-medium">{{ successMessage }}</div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fs-7 fw-semibold">Prénom</label>
-              <input type="text" class="fluent-input" [(ngModel)]="profile.firstName" name="firstName" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fs-7 fw-semibold">Adresse Email</label>
-              <input type="email" class="fluent-input" [(ngModel)]="profile.email" name="email" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fs-7 fw-semibold">Poste</label>
-              <input type="text" class="fluent-input" [(ngModel)]="profile.position" name="position" disabled>
-            </div>
-            <div class="col-12 mt-4">
-              <button type="submit" class="fluent-btn-primary">Enregistrer les modifications</button>
+            <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center gap-2 border-0 shadow-sm" role="alert">
+              <span class="material-symbols-outlined fs-5">error</span>
+              <div class="fs-7 fw-medium">{{ errorMessage }}</div>
             </div>
           </div>
-        </form>
-      </div>
 
-      <!-- Roles & Permissions Settings -->
-      <div class="fluent-card" *ngIf="activeTab === 'roles'">
-        <h4 class="fw-bold mb-3 fs-5">Gestion des Rôles</h4>
-        <p class="text-muted fs-7 mb-4">Visualisez et configurez les droits d'accès pour les groupes d'utilisateurs.</p>
-        <hr class="mb-4">
+          <!-- Avatar & Quick Info Card -->
+          <div class="col-lg-4">
+            <div class="fluent-card shadow-sm border-0 text-center p-4 h-100 d-flex flex-column align-items-center justify-content-center">
+              <div class="avatar-container mb-3 position-relative">
+                <img [src]="photoPreview || 'assets/images/avatar.png'" alt="Avatar" class="profile-avatar shadow-sm" />
+                <label for="avatarUpload" class="avatar-upload-label shadow d-flex align-items-center justify-content-center cursor-pointer" [class.disabled]="uploadingPhoto">
+                  <span class="material-symbols-outlined fs-6" *ngIf="!uploadingPhoto">photo_camera</span>
+                  <div class="spinner-border spinner-border-sm text-white" role="status" *ngIf="uploadingPhoto"></div>
+                </label>
+                <input type="file" id="avatarUpload" class="d-none" accept="image/*" (change)="onFileSelected($event)" [disabled]="uploadingPhoto" />
+              </div>
 
-        <div class="table-responsive">
-          <table class="table table-bordered table-sm align-middle fs-7 text-dark">
-            <thead>
-              <tr class="table-light">
-                <th>Fonctionnalité</th>
-                <th>Administrateur</th>
-                <th>Recruteur</th>
-                <th>Employé</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Consulter le Dashboard</td>
-                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
-                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
-                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
-              </tr>
-              <tr>
-                <td>CRUD Employés & Salaires</td>
-                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
-                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
-                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
-              </tr>
-              <tr>
-                <td>Analyse de CV IA</td>
-                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
-                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
-                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
-              </tr>
-              <tr>
-                <td>Validation des Congés</td>
-                <td><span class="material-symbols-outlined text-success">check_circle</span></td>
-                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
-                <td><span class="material-symbols-outlined text-muted">cancel</span></td>
-              </tr>
-            </tbody>
-          </table>
+              <h4 class="fw-bold text-dark mb-1">
+                {{ currentUser?.firstName }} {{ currentUser?.lastName }}
+              </h4>
+              <span class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2 rounded mb-3">
+                {{ currentUser?.position }}
+              </span>
+
+              <div class="divider w-100 my-3"></div>
+
+              <div class="w-100 text-start quick-info-list d-flex flex-column gap-2 text-muted fs-8">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="material-symbols-outlined text-muted fs-6">corporate_fare</span>
+                  <span>Département : <strong>{{ currentUser?.department || 'IT' }}</strong></span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="material-symbols-outlined text-muted fs-6">calendar_today</span>
+                  <span>Embauché le : <strong>{{ currentUser?.hireDate | date:'dd/MM/yyyy' }}</strong></span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="material-symbols-outlined text-muted fs-6">beach_access</span>
+                  <span>Solde congés : <strong>{{ currentUser?.availableLeaveDays }} jours</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Profile Edit Form -->
+          <div class="col-lg-8">
+            <div class="fluent-card shadow-sm border-0 p-4">
+              <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+                
+                <h5 class="fw-bold mb-4 text-dark pb-2 border-bottom d-flex align-items-center gap-2">
+                  <span class="material-symbols-outlined text-primary fs-5">person</span>
+                  Informations Personnelles
+                </h5>
+
+                <div class="row g-3 mb-4">
+                  <!-- First Name -->
+                  <div class="col-md-6">
+                    <label for="firstName" class="form-label fs-7 fw-semibold text-muted">Prénom</label>
+                    <input type="text" id="firstName" class="form-control" formControlName="firstName" 
+                           [class.is-invalid]="profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched" />
+                    <div class="invalid-feedback fs-8">
+                      Le prénom est requis (min. 2 caractères).
+                    </div>
+                  </div>
+
+                  <!-- Last Name -->
+                  <div class="col-md-6">
+                    <label for="lastName" class="form-label fs-7 fw-semibold text-muted">Nom</label>
+                    <input type="text" id="lastName" class="form-control" formControlName="lastName" 
+                           [class.is-invalid]="profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched" />
+                    <div class="invalid-feedback fs-8">
+                      Le nom est requis (min. 2 caractères).
+                    </div>
+                  </div>
+
+                  <!-- Phone -->
+                  <div class="col-md-6">
+                    <label for="phone" class="form-label fs-7 fw-semibold text-muted">Téléphone</label>
+                    <input type="tel" id="phone" class="form-control" formControlName="phone" 
+                           [class.is-invalid]="profileForm.get('phone')?.invalid && profileForm.get('phone')?.touched" />
+                    <div class="invalid-feedback fs-8">
+                      Format de téléphone invalide.
+                    </div>
+                  </div>
+
+                  <!-- Address -->
+                  <div class="col-md-6">
+                    <label for="address" class="form-label fs-7 fw-semibold text-muted">Adresse</label>
+                    <input type="text" id="address" class="form-control" formControlName="address" 
+                           [class.is-invalid]="profileForm.get('address')?.invalid && profileForm.get('address')?.touched" />
+                    <div class="invalid-feedback fs-8">
+                      L'adresse est requise (min. 5 caractères).
+                    </div>
+                  </div>
+                </div>
+
+                <h5 class="fw-bold mb-4 text-dark pb-2 border-bottom d-flex align-items-center gap-2">
+                  <span class="material-symbols-outlined text-muted fs-5">lock</span>
+                  Informations Professionnelles <span class="fs-9 fw-normal text-muted">(Lecture seule)</span>
+                </h5>
+
+                <div class="row g-3 mb-4">
+                  <!-- Email -->
+                  <div class="col-md-6">
+                    <div class="readonly-wrapper position-relative">
+                      <label for="email" class="form-label fs-7 fw-semibold text-muted">E-mail (Identifiant SSO)</label>
+                      <input type="email" id="email" class="form-control bg-light" formControlName="email" />
+                      <span class="material-symbols-outlined readonly-lock text-muted fs-6">lock</span>
+                    </div>
+                  </div>
+
+                  <!-- Position -->
+                  <div class="col-md-6">
+                    <div class="readonly-wrapper position-relative">
+                      <label for="position" class="form-label fs-7 fw-semibold text-muted">Poste occupé</label>
+                      <input type="text" id="position" class="form-control bg-light" formControlName="position" />
+                      <span class="material-symbols-outlined readonly-lock text-muted fs-6">lock</span>
+                    </div>
+                  </div>
+
+                  <!-- Department -->
+                  <div class="col-md-6">
+                    <div class="readonly-wrapper position-relative">
+                      <label for="department" class="form-label fs-7 fw-semibold text-muted">Département</label>
+                      <input type="text" id="department" class="form-control bg-light" formControlName="department" />
+                      <span class="material-symbols-outlined readonly-lock text-muted fs-6">lock</span>
+                    </div>
+                  </div>
+
+                  <!-- Hire Date -->
+                  <div class="col-md-6">
+                    <div class="readonly-wrapper position-relative">
+                      <label for="hireDate" class="form-label fs-7 fw-semibold text-muted">Date d'embauche</label>
+                      <input type="text" id="hireDate" class="form-control bg-light" formControlName="hireDate" />
+                      <span class="material-symbols-outlined readonly-lock text-muted fs-6">lock</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                  <button type="submit" class="fluent-btn-primary d-flex align-items-center gap-2" [disabled]="saving || profileForm.invalid">
+                    <span class="material-symbols-outlined fs-6" *ngIf="!saving">save</span>
+                    <div class="spinner-border spinner-border-sm text-white" role="status" *ngIf="saving"></div>
+                    <span>{{ saving ? 'Enregistrement...' : 'Sauvegarder les modifications' }}</span>
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
         </div>
       </div>
 

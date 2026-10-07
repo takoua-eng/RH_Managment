@@ -1,0 +1,241 @@
+<div class="page-container">
+  <div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Candidatures reçues</h2>
+      <p class="text-secondary mb-0">Consultez et traitez les candidatures soumises depuis le portail public.</p>
+    </div>
+    <div>
+      <button class="btn btn-outline-primary d-flex align-items-center gap-2 rounded-3 fs-8 fw-semibold" (click)="router.navigate(['/dashboard/recruitment-tracking'])">
+        <span class="material-symbols-outlined fs-5">alt_route</span> Tableau de Suivi Workflow
+      </button>
+    </div>
+  </div>
+
+  <div class="fluent-card mb-4 p-3 bg-white shadow-sm rounded-3">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label fs-8 text-muted fw-medium mb-1">Recherche (Nom, Email...)</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><span class="material-symbols-outlined fs-6">search</span></span>
+          <input type="text" class="form-control bg-light border-start-0" placeholder="Rechercher..." [(ngModel)]="searchQuery" (input)="applyFilters()">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fs-8 text-muted fw-medium mb-1">Offre d'emploi</label>
+        <select class="form-select bg-light" [(ngModel)]="offerFilter" (change)="applyFilters()">
+          <option value="">Toutes les offres</option>
+          <option *ngFor="let offer of jobOffers" [value]="offer.id">{{ offer.title }}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fs-8 text-muted fw-medium mb-1">Département</label>
+        <select class="form-select bg-light" [(ngModel)]="departmentFilter" (change)="applyFilters()">
+          <option value="">Tous les départements</option>
+          <option *ngFor="let dept of departments" [value]="dept.name">{{ dept.name }}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fs-8 text-muted fw-medium mb-1">Statut</label>
+        <select class="form-select bg-light" [(ngModel)]="statusFilter" (change)="applyFilters()">
+          <option value="">Tous les statuts</option>
+          <option value="NOUVELLE">Nouvelle</option>
+          <option value="TRANSMISE_MANAGER">Transmise au Manager</option>
+          <option value="ENTRETIEN_PLANIFIE">Entretien planifié</option>
+          <option value="ENTRETIEN_TERMINE">Entretien terminé</option>
+          <option value="ACCEPTEE">Acceptée</option>
+          <option value="REFUSEE">Refusée</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fs-8 text-muted fw-medium mb-1">Recommandation IA</label>
+        <select class="form-select bg-light" [(ngModel)]="aiRecommendationFilter" (change)="applyFilters()">
+          <option value="">Toutes</option>
+          <option value="COMPATIBLE">Compatible</option>
+          <option value="A_EXAMINER">À examiner</option>
+          <option value="NON_COMPATIBLE">Non compatible</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="fluent-card shadow-sm rounded-3 bg-white overflow-hidden">
+    
+    <!-- Loading State -->
+    <div class="text-center py-5" *ngIf="loading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="text-center py-5" *ngIf="!loading && filteredCandidates.length === 0">
+      <span class="material-symbols-outlined text-muted" style="font-size: 48px;">inbox</span>
+      <h5 class="mt-3 text-secondary">Aucune candidature trouvée.</h5>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive" *ngIf="!loading && filteredCandidates.length > 0">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Candidat</th>
+            <th>Poste visé & Dép.</th>
+            <th>Manager</th>
+            <th class="cursor-pointer" (click)="toggleSort()">
+              Date 
+              <span class="material-symbols-outlined fs-7 align-middle" *ngIf="sortBy === 'date'">{{ sortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</span>
+            </th>
+            <th>Statut</th>
+            <th class="cursor-pointer" (click)="toggleAiScoreSort()">
+              Score IA
+              <span class="material-symbols-outlined fs-7 align-middle" *ngIf="sortBy === 'aiScore'">{{ sortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</span>
+            </th>
+            <th>Documents</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of filteredCandidates">
+            <td>
+              <div class="d-flex align-items-center gap-3">
+                <div class="avatar bg-primary-subtle text-primary rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                  <span class="fw-bold">{{ c.firstName.charAt(0) }}{{ c.lastName.charAt(0) }}</span>
+                </div>
+                <div>
+                  <div class="fw-bold">{{ c.firstName }} {{ c.lastName }}</div>
+                  <div class="text-secondary fs-8 d-flex flex-column">
+                    <span>{{ c.email }}</span>
+                    <span>{{ c.phone }}</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="fw-medium text-dark">{{ c.jobOfferTitle }}</div>
+              <div class="text-muted fs-8"><span class="badge bg-light text-dark border">{{ c.jobOfferDepartment }}</span></div>
+            </td>
+            <td>
+              <div class="fs-8 text-secondary d-flex align-items-center gap-1">
+                <span class="material-symbols-outlined fs-7">person</span>
+                {{ getManagerName(c.jobOfferDepartment) }}
+              </div>
+            </td>
+            <td class="text-secondary">{{ c.applicationDate | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <span class="badge rounded-pill" [ngClass]="getStatusBadgeClass(c.status)">
+                {{ getStatusLabel(c.status) }}
+              </span>
+            </td>
+            <td>
+              <ng-container [ngSwitch]="c.aiStatus">
+                <!-- TERMINEE -->
+                <span *ngSwitchCase="'TERMINEE'" class="badge rounded-pill px-2 py-1 fs-8 fw-semibold" [ngClass]="getAiScoreBadgeClass(c.aiRecommendation)">
+                  {{ formatAiScore(c.aiScore) }}
+                </span>
+
+                <!-- ERREUR -->
+                <span *ngSwitchCase="'ERREUR'" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 fs-8" [title]="c.aiError || 'Erreur d\'analyse'">
+                  Erreur
+                </span>
+
+                <!-- Absent ou EN_ATTENTE -->
+                <span *ngSwitchDefault class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 fs-8">
+                  Analyse…
+                </span>
+              </ng-container>
+            </td>
+            <td>
+              <div class="d-flex flex-column gap-1">
+                <button class="btn btn-sm btn-link p-0 text-start d-flex align-items-center gap-1 text-decoration-none fs-8" *ngIf="c.hasCv" (click)="downloadDocument(c.id, 'cv', c.cvFileName)">
+                  <span class="material-symbols-outlined fs-7 text-danger">picture_as_pdf</span> CV
+                </button>
+                <button class="btn btn-sm btn-link p-0 text-start d-flex align-items-center gap-1 text-decoration-none fs-8" *ngIf="c.hasMotivationLetter" (click)="downloadDocument(c.id, 'ml', c.motivationLetterFileName)">
+                  <span class="material-symbols-outlined fs-7 text-danger">picture_as_pdf</span> Lettre de mot.
+                </button>
+              </div>
+            </td>
+            <td class="text-end">
+              <div class="dropdown">
+                <button class="btn btn-sm btn-light btn-icon" data-bs-toggle="dropdown">
+                  <span class="material-symbols-outlined fs-5">more_vert</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                  <li><a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0)" (click)="goToDetails(c.id)"><span class="material-symbols-outlined fs-6 text-primary">visibility</span> Consulter les détails</a></li>
+                  <li><a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0)" (click)="openStatusModal(c)"><span class="material-symbols-outlined fs-6 text-secondary">edit</span> Modifier le statut</a></li>
+                  <li *ngIf="c.status === 'NOUVELLE'"><hr class="dropdown-divider"></li>
+                  <li *ngIf="c.status === 'NOUVELLE'"><a class="dropdown-item d-flex align-items-center gap-2 text-primary" href="javascript:void(0)" (click)="openTransmitModal(c)"><span class="material-symbols-outlined fs-6">forward_to_inbox</span> Transmettre au Manager</a></li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Update Status -->
+<div class="modal fade show" tabindex="-1" *ngIf="selectedCandidate && !showTransmitModal" style="display: block; background-color: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold">Modifier le statut</h5>
+        <button type="button" class="btn-close" (click)="closeStatusModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-4">Candidat : <span class="fw-bold text-dark">{{ selectedCandidate.firstName }} {{ selectedCandidate.lastName }}</span></p>
+        
+        <div class="mb-3">
+          <label class="form-label fw-medium">Nouveau statut</label>
+          <select class="form-select bg-light" [(ngModel)]="newStatus">
+            <option value="NOUVELLE">Nouvelle</option>
+            <option value="TRANSMISE_MANAGER">Transmise au Manager</option>
+            <option value="ENTRETIEN_PLANIFIE">Entretien planifié</option>
+            <option value="ENTRETIEN_TERMINE">Entretien terminé</option>
+            <option value="ACCEPTEE">Acceptée</option>
+            <option value="REFUSEE">Refusée</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-light" (click)="closeStatusModal()">Annuler</button>
+        <button type="button" class="fluent-btn-primary" (click)="saveStatus()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Transmit to Manager -->
+<div class="modal fade show" tabindex="-1" *ngIf="showTransmitModal && selectedCandidate" style="display: block; background-color: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary">forward_to_inbox</span> Transmettre la candidature
+        </h5>
+        <button type="button" class="btn-close" (click)="closeTransmitModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-4">Candidat : <span class="fw-bold text-dark">{{ selectedCandidate.firstName }} {{ selectedCandidate.lastName }}</span></p>
+        <p class="fs-8 text-secondary mb-3">Veuillez sélectionner le manager qui sera chargé d'évaluer cette candidature pour le poste de <strong>{{ selectedCandidate.jobOfferTitle }}</strong> ({{ selectedCandidate.jobOfferDepartment }}).</p>
+        
+        <div class="mb-3">
+          <label class="form-label fw-medium">Sélectionner un Manager</label>
+          <select class="form-select bg-light" [(ngModel)]="selectedManagerId">
+            <option [ngValue]="null" disabled>Choisir un manager...</option>
+            <option *ngFor="let manager of managers" [value]="manager.id">
+              {{ manager.firstName }} {{ manager.lastName }} ({{ manager.position }})
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-light" (click)="closeTransmitModal()">Annuler</button>
+        <button type="button" class="fluent-btn-primary d-flex align-items-center gap-2" [disabled]="!selectedManagerId" (click)="confirmTransmit()">
+          <span class="material-symbols-outlined fs-6">send</span> Transmettre
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

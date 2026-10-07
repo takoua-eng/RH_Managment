@@ -1,0 +1,11 @@
+<div class="layout-container">
+  <app-manager-sidebar [isCollapsed]="sidebarCollapsed"></app-manager-sidebar>
+
+  <div class="main-wrapper" [class.sidebar-collapsed]="sidebarCollapsed">
+    <app-manager-navbar (toggleSidebar)="sidebarCollapsed = !sidebarCollapsed"></app-manager-navbar>
+
+    <main class="page-content container-fluid py-4">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

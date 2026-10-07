@@ -1,4 +1,5 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
 
 :root {
   --fluent-primary: #2563EB;
@@ -42,6 +43,77 @@
   --fluent-success-light: rgba(16, 185, 129, 0.2);
   --fluent-error-light: rgba(239, 68, 68, 0.2);
   --fluent-warning-light: rgba(245, 158, 11, 0.2);
+
+  /* High Contrast Text & Element Overrides */
+  body, h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    color: #F8FAFC !important;
+  }
+
+  .text-dark {
+    color: #F8FAFC !important;
+  }
+
+  .text-secondary, .text-muted {
+    color: #94A3B8 !important;
+  }
+
+  .bg-light, .table-light {
+    background-color: #1E293B !important;
+    color: #F8FAFC !important;
+  }
+
+  .card, .fluent-card, .list-group-item, .modal-content {
+    background-color: #151C2C !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #F8FAFC !important;
+  }
+
+  .list-group-item {
+    color: #F8FAFC !important;
+    &:hover:not(.active) {
+      background-color: #1E293B !important;
+    }
+  }
+
+  .form-control, .form-select, input, select, textarea {
+    background-color: #0F172A !important;
+    border-color: #334155 !important;
+    color: #F8FAFC !important;
+
+    &::placeholder {
+      color: #64748B !important;
+    }
+
+    &:focus {
+      border-color: #2563EB !important;
+      color: #FFFFFF !important;
+    }
+
+    &[disabled], &:disabled {
+      background-color: #1E293B !important;
+      color: #94A3B8 !important;
+    }
+  }
+
+  .table {
+    color: #F8FAFC !important;
+    border-color: #334155 !important;
+
+    th {
+      background-color: #1E293B !important;
+      color: #CBD5E1 !important;
+      border-color: #334155 !important;
+    }
+
+    td {
+      border-color: #334155 !important;
+      color: #F8FAFC !important;
+    }
+  }
+
+  .border, .border-top, .border-bottom, .border-start, .border-end {
+    border-color: #334155 !important;
+  }
 }
 
 * {
@@ -57,6 +129,10 @@ body {
   color: var(--fluent-text);
   min-height: 100vh;
   overflow-x: hidden;
+
+  &.modal-open {
+    overflow: hidden !important;
+  }
 }
 
 /* Scrollbar styles */
@@ -211,4 +287,142 @@ body {
 .material-symbols-outlined {
   vertical-align: middle;
   font-size: 1.25rem;
+}
+
+/* ==========================================
+   UNIFIED RECRUITMENT & HR DESIGN SYSTEM
+   ========================================== */
+
+/* Unified Status Badges */
+.status-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  line-height: 1.2;
+
+  &.badge-nouvelle {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+
+  &.badge-transmise {
+    background-color: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #e9d5ff;
+  }
+
+  &.badge-entretien {
+    background-color: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+  }
+
+  &.badge-termine {
+    background-color: #ccfbf1;
+    color: #0f766e;
+    border: 1px solid #99f6e4;
+  }
+
+  &.badge-acceptee {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+
+  &.badge-refusee {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+  }
+
+  &.badge-annule {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+  }
+}
+
+/* Avatar Initials */
+.avatar-initials {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+/* Unified Page Headers */
+.page-container {
+  padding: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--fluent-text);
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+    color: var(--fluent-text-secondary);
+    margin-bottom: 0;
+  }
+}
+
+/* Unified Modals */
+.modal-content.rounded-4 {
+  border-radius: 16px !important;
+  border: none;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header.border-bottom-0 {
+  padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer.border-top-0 {
+  padding: 0.5rem 1.5rem 1.5rem 1.5rem;
+}
+
+/* Table Hover & Styling */
+.table {
+  th {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--fluent-text-secondary);
+    background-color: var(--fluent-surface-hover);
+    padding: 0.9rem 1rem;
+  }
+
+  td {
+    padding: 1rem;
+    vertical-align: middle;
+  }
 }

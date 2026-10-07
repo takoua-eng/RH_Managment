@@ -1,0 +1,395 @@
+<div class="container-fluid p-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-primary fs-2">alt_route</span> Suivi du Processus de Recrutement
+      </h3>
+      <p class="text-muted fs-8 mb-0">Tableau de bord de suivi chronologique des candidatures et des étapes de recrutement</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary d-flex align-items-center gap-1 rounded-3 fs-8" (click)="loadCandidates()">
+        <span class="material-symbols-outlined fs-6">refresh</span> Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- Représentation visuelle du Workflow global -->
+  <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white p-4">
+    <h6 class="fw-bold text-secondary mb-3 fs-8 text-uppercase tracking-wider">Étapes du workflow de recrutement</h6>
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 position-relative px-2">
+      
+      <!-- Étape 1 -->
+      <div class="d-flex flex-column align-items-center text-center flex-1">
+        <div class="badge-step bg-info text-white shadow-sm mb-2">1</div>
+        <div class="fw-bold text-dark fs-8">NOUVELLE</div>
+        <div class="text-muted fs-8">{{ countNew }} candidature(s)</div>
+      </div>
+
+      <div class="step-arrow text-muted fs-4 material-symbols-outlined">arrow_forward</div>
+
+      <!-- Étape 2 -->
+      <div class="d-flex flex-column align-items-center text-center flex-1">
+        <div class="badge-step bg-primary text-white shadow-sm mb-2">2</div>
+        <div class="fw-bold text-dark fs-8">TRANSMISE_MANAGER</div>
+        <div class="text-muted fs-8">{{ countTransmitted }} en revue</div>
+      </div>
+
+      <div class="step-arrow text-muted fs-4 material-symbols-outlined">arrow_forward</div>
+
+      <!-- Étape 3 -->
+      <div class="d-flex flex-column align-items-center text-center flex-1">
+        <div class="badge-step bg-warning text-dark shadow-sm mb-2">3</div>
+        <div class="fw-bold text-dark fs-8">ENTRETIEN_PLANIFIE</div>
+        <div class="text-muted fs-8">{{ countInterview }} planifié(s) / en cours</div>
+      </div>
+
+      <div class="step-arrow text-muted fs-4 material-symbols-outlined">arrow_forward</div>
+
+      <!-- Étape 4 -->
+      <div class="d-flex flex-column align-items-center text-center flex-1">
+        <div class="badge-step bg-purple text-white shadow-sm mb-2">4</div>
+        <div class="fw-bold text-dark fs-8">ENTRETIEN_TERMINE</div>
+        <div class="text-muted fs-8">Évaluation finalisée</div>
+      </div>
+
+      <div class="step-arrow text-muted fs-4 material-symbols-outlined">arrow_forward</div>
+
+      <!-- Étape 5 -->
+      <div class="d-flex flex-column align-items-center text-center flex-1">
+        <div class="d-flex gap-1 mb-2">
+          <span class="badge-step bg-success text-white shadow-sm">✓</span>
+          <span class="badge-step bg-danger text-white shadow-sm">✗</span>
+        </div>
+        <div class="fw-bold text-dark fs-8">ACCEPTEE / REFUSEE</div>
+        <div class="text-muted fs-8">{{ countAccepted }} retenue(s) · {{ countRejected }} refusée(s)</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Barre de Filtres Avancés -->
+  <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-secondary fs-5">filter_alt</span> Filtres de suivi
+      </h6>
+      <button class="btn btn-link text-decoration-none p-0 fs-8 text-primary" (click)="resetFilters()">Réinitialiser les filtres</button>
+    </div>
+
+    <div class="row g-3">
+      <!-- Recherche textuelle -->
+      <div class="col-md-3">
+        <label class="form-label text-muted fs-8 mb-1">Recherche</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><span class="material-symbols-outlined fs-6 text-muted">search</span></span>
+          <input type="text" class="form-control bg-light border-start-0 fs-8" placeholder="Nom, email, poste..." [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()">
+        </div>
+      </div>
+
+      <!-- Filtre Statut -->
+      <div class="col-md-2">
+        <label class="form-label text-muted fs-8 mb-1">Statut</label>
+        <select class="form-select bg-light fs-8" [(ngModel)]="statusFilter" (change)="applyFilters()">
+          <option value="">Tous les statuts</option>
+          <option value="NOUVELLE">Nouvelle</option>
+          <option value="TRANSMISE_MANAGER">Transmise au Manager</option>
+          <option value="ENTRETIEN_PLANIFIE">Entretien Planifié</option>
+          <option value="ENTRETIEN_TERMINE">Entretien Terminé</option>
+          <option value="ACCEPTEE">Acceptée</option>
+          <option value="REFUSEE">Refusée</option>
+        </select>
+      </div>
+
+      <!-- Filtre Offre -->
+      <div class="col-md-2">
+        <label class="form-label text-muted fs-8 mb-1">Offre d'emploi</label>
+        <select class="form-select bg-light fs-8" [(ngModel)]="offerFilter" (change)="applyFilters()">
+          <option value="">Toutes les offres</option>
+          <option *ngFor="let offer of jobOffers" [value]="offer.id">{{ offer.title }}</option>
+        </select>
+      </div>
+
+      <!-- Filtre Département -->
+      <div class="col-md-2">
+        <label class="form-label text-muted fs-8 mb-1">Département</label>
+        <select class="form-select bg-light fs-8" [(ngModel)]="departmentFilter" (change)="applyFilters()">
+          <option value="">Tous les départements</option>
+          <option *ngFor="let dept of departments" [value]="dept.name">{{ dept.name }}</option>
+        </select>
+      </div>
+
+      <!-- Filtre Période : Date Début -->
+      <div class="col-md-1-5 col-6">
+        <label class="form-label text-muted fs-8 mb-1">Période du</label>
+        <input type="date" class="form-control bg-light fs-8" [(ngModel)]="startDateFilter" (change)="applyFilters()">
+      </div>
+
+      <!-- Filtre Période : Date Fin -->
+      <div class="col-md-1-5 col-6">
+        <label class="form-label text-muted fs-8 mb-1">au</label>
+        <input type="date" class="form-control bg-light fs-8" [(ngModel)]="endDateFilter" (change)="applyFilters()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Tableau du Suivi du Processus -->
+  <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+    <div class="card-header bg-white border-bottom-0 p-4 d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0 text-dark">
+        Candidatures en suivi <span class="badge bg-light text-primary border ms-2 fs-8">{{ filteredCandidates.length }}</span>
+      </h5>
+    </div>
+
+    <!-- Spinner Chargement -->
+    <div *ngIf="loading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted fs-8 mt-2">Chargement des données de suivi...</p>
+    </div>
+
+    <!-- Liste vide -->
+    <div *ngIf="!loading && filteredCandidates.length === 0" class="text-center py-5">
+      <span class="material-symbols-outlined text-muted fs-1 mb-2">assignment_late</span>
+      <h6 class="fw-bold text-dark">Aucune candidature ne correspond aux filtres</h6>
+      <p class="text-muted fs-8">Essayez de modifier les paramètres de recherche ou réinitialisez les filtres.</p>
+    </div>
+
+    <!-- Tableau -->
+    <div *ngIf="!loading && filteredCandidates.length > 0" class="table-responsive">
+      <table class="table align-middle mb-0 table-hover">
+        <thead class="bg-light text-muted fs-8 text-uppercase tracking-wider">
+          <tr>
+            <th class="ps-4">Candidat</th>
+            <th>Offre</th>
+            <th>Département</th>
+            <th>Manager Responsable</th>
+            <th>Statut</th>
+            <th>Date Candidature</th>
+            <th>Date Transmission</th>
+            <th>Date Entretien</th>
+            <th class="text-end pe-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="fs-8">
+          <tr *ngFor="let c of filteredCandidates">
+            
+            <!-- Candidat -->
+            <td class="ps-4">
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar-initials bg-primary-subtle text-primary rounded-circle fw-bold d-flex align-items-center justify-content-center">
+                  {{ c.firstName[0] }}{{ c.lastName[0] }}
+                </div>
+                <div>
+                  <div class="fw-bold text-dark fs-7">{{ c.firstName }} {{ c.lastName }}</div>
+                  <div class="text-muted fs-8">{{ c.email }}</div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Offre -->
+            <td>
+              <span class="fw-medium text-dark">{{ c.jobOfferTitle || 'Non spécifiée' }}</span>
+            </td>
+
+            <!-- Département -->
+            <td>
+              <span class="badge bg-light text-dark border">{{ c.jobOfferDepartment || 'N/A' }}</span>
+            </td>
+
+            <!-- Manager Responsable -->
+            <td>
+              <div *ngIf="c.assignedManagerName" class="d-flex align-items-center gap-1 text-dark fw-medium">
+                <span class="material-symbols-outlined fs-6 text-primary">person</span>
+                {{ c.assignedManagerName }}
+              </div>
+              <span *ngIf="!c.assignedManagerName" class="text-muted italic fs-8">Non assigné</span>
+            </td>
+
+            <!-- Statut -->
+            <td>
+              <span class="badge rounded-pill px-3 py-1 fs-8" [ngClass]="getStatusBadgeClass(c.status)">
+                {{ getStatusLabel(c.status) }}
+              </span>
+            </td>
+
+            <!-- Date Candidature -->
+            <td>
+              <div class="text-dark">{{ c.applicationDate | date:'dd/MM/yyyy' }}</div>
+            </td>
+
+            <!-- Date Transmission -->
+            <td>
+              <div *ngIf="c.transmissionDate" class="text-dark">{{ c.transmissionDate | date:'dd/MM/yyyy' }}</div>
+              <span *ngIf="!c.transmissionDate" class="text-muted">-</span>
+            </td>
+
+            <!-- Date Entretien -->
+            <td>
+              <div *ngIf="getInterviewDate(c.id)" class="fw-bold text-primary">
+                {{ getInterviewDate(c.id) }}
+              </div>
+              <span *ngIf="!getInterviewDate(c.id)" class="text-muted">-</span>
+            </td>
+
+            <!-- Actions -->
+            <td class="text-end pe-4">
+              <div class="d-flex justify-content-end gap-1">
+                <button class="btn btn-sm btn-light border d-inline-flex align-items-center gap-1 rounded-3 fs-8" 
+                        title="Voir l'historique détaillé" 
+                        (click)="openHistoryModal(c)">
+                  <span class="material-symbols-outlined fs-6 text-primary">history</span> Historique
+                </button>
+                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 rounded-3 fs-8" 
+                        title="Fiche Candidat" 
+                        (click)="goToDetails(c.id)">
+                  <span class="material-symbols-outlined fs-6">visibility</span>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal Vue Détaillée de l'Historique -->
+<div class="modal fade show" tabindex="-1" *ngIf="showHistoryModal && selectedCandidateForHistory" style="display: block; background-color: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content rounded-4 border-0 shadow">
+      
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2 text-primary">
+          <span class="material-symbols-outlined">history</span> Historique du recrutement : {{ selectedCandidateForHistory.firstName }} {{ selectedCandidateForHistory.lastName }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeHistoryModal()"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        
+        <!-- En-tête Candidat -->
+        <div class="bg-light p-3 rounded-3 mb-4 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-bold text-dark fs-6">{{ selectedCandidateForHistory.firstName }} {{ selectedCandidateForHistory.lastName }}</div>
+            <div class="text-muted fs-8">{{ selectedCandidateForHistory.email }} · {{ selectedCandidateForHistory.phone }}</div>
+            <div class="mt-1 fs-8">
+              <span class="fw-semibold">Offre :</span> {{ selectedCandidateForHistory.jobOfferTitle }} ({{ selectedCandidateForHistory.jobOfferDepartment }})
+            </div>
+          </div>
+          <div>
+            <span class="badge rounded-pill px-3 py-2 fs-8" [ngClass]="getStatusBadgeClass(selectedCandidateForHistory.status)">
+              {{ getStatusLabel(selectedCandidateForHistory.status) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Stepper visuel du Processus -->
+        <h6 class="fw-bold text-dark mb-3">Avancement chronologique dans le workflow</h6>
+        <div class="timeline-stepper mb-4 p-3 bg-white border rounded-3">
+          
+          <!-- Jalon 1: Nouvelle -->
+          <div class="timeline-item" [class.active]="getStageIndex(selectedCandidateForHistory.status) >= 1">
+            <div class="timeline-icon bg-info text-white">1</div>
+            <div class="timeline-content">
+              <div class="fw-bold text-dark fs-8">Candidature reçue</div>
+              <div class="text-muted fs-8">{{ selectedCandidateForHistory.applicationDate | date:'dd/MM/yyyy' }}</div>
+            </div>
+          </div>
+
+          <!-- Jalon 2: Transmission Manager -->
+          <div class="timeline-item" [class.active]="getStageIndex(selectedCandidateForHistory.status) >= 2">
+            <div class="timeline-icon" [ngClass]="getStageIndex(selectedCandidateForHistory.status) >= 2 ? 'bg-primary text-white' : 'bg-light text-muted border'">2</div>
+            <div class="timeline-content">
+              <div class="fw-bold text-dark fs-8">Transmise au Manager</div>
+              <div *ngIf="selectedCandidateForHistory.transmissionDate" class="text-muted fs-8">
+                Transmis le {{ selectedCandidateForHistory.transmissionDate | date:'dd/MM/yyyy' }}
+                <span *ngIf="selectedCandidateForHistory.assignedManagerName"> à {{ selectedCandidateForHistory.assignedManagerName }}</span>
+              </div>
+              <div *ngIf="!selectedCandidateForHistory.transmissionDate" class="text-muted fs-8 italic">En attente de transmission</div>
+            </div>
+          </div>
+
+          <!-- Jalon 3: Entretien Planifié -->
+          <div class="timeline-item" [class.active]="getStageIndex(selectedCandidateForHistory.status) >= 3">
+            <div class="timeline-icon" [ngClass]="getStageIndex(selectedCandidateForHistory.status) >= 3 ? 'bg-warning text-dark' : 'bg-light text-muted border'">3</div>
+            <div class="timeline-content">
+              <div class="fw-bold text-dark fs-8">Entretien Planifié</div>
+              <div *ngIf="selectedCandidateInterviews.length > 0" class="text-muted fs-8">
+                Planifié pour le {{ selectedCandidateInterviews[0].interviewDate | date:'dd/MM/yyyy' }} à {{ selectedCandidateInterviews[0].interviewTime }}
+              </div>
+              <div *ngIf="selectedCandidateInterviews.length === 0" class="text-muted fs-8 italic">Aucun entretien planifié</div>
+            </div>
+          </div>
+
+          <!-- Jalon 4: Entretien Terminé -->
+          <div class="timeline-item" [class.active]="getStageIndex(selectedCandidateForHistory.status) >= 4">
+            <div class="timeline-icon" [ngClass]="getStageIndex(selectedCandidateForHistory.status) >= 4 ? 'bg-purple text-white' : 'bg-light text-muted border'">4</div>
+            <div class="timeline-content">
+              <div class="fw-bold text-dark fs-8">Entretien Effectué</div>
+              <div class="text-muted fs-8">Évaluation en cours / terminée</div>
+            </div>
+          </div>
+
+          <!-- Jalon 5: Décision Finale -->
+          <div class="timeline-item" [class.active]="getStageIndex(selectedCandidateForHistory.status) >= 5">
+            <div class="timeline-icon" [ngClass]="selectedCandidateForHistory.status === 'ACCEPTEE' ? 'bg-success text-white' : (selectedCandidateForHistory.status === 'REFUSEE' ? 'bg-danger text-white' : 'bg-light text-muted border')">5</div>
+            <div class="timeline-content">
+              <div class="fw-bold text-dark fs-8">Décision Finale</div>
+              <div class="text-muted fs-8">{{ getStatusLabel(selectedCandidateForHistory.status) }}</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Détail des entretiens passés/planifiés -->
+        <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary fs-5">event_note</span> Historique des entretiens ({{ selectedCandidateInterviews.length }})
+        </h6>
+
+        <div *ngIf="loadingHistoryInterviews" class="text-center py-3">
+          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        </div>
+
+        <div *ngIf="!loadingHistoryInterviews && selectedCandidateInterviews.length === 0" class="text-muted fs-8 py-3 text-center bg-light rounded-3">
+          Aucun enregistrement d'entretien disponible.
+        </div>
+
+        <div *ngIf="!loadingHistoryInterviews && selectedCandidateInterviews.length > 0" class="space-y-3">
+          <div *ngFor="let it of selectedCandidateInterviews" class="border rounded-3 p-3 bg-light mb-2">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <span class="badge bg-warning text-dark me-2">{{ it.type }}</span>
+                <span class="fw-bold text-dark fs-7">{{ it.interviewDate | date:'dd/MM/yyyy' }} à {{ it.interviewTime }}</span>
+                <span class="text-muted fs-8 ms-2">({{ it.durationMinutes }} min)</span>
+              </div>
+              <span class="badge" [ngClass]="{'bg-primary': it.status === 'PLANIFIE', 'bg-success': it.status === 'TERMINE', 'bg-danger': it.status === 'ANNULE'}">{{ it.status }}</span>
+            </div>
+
+            <div *ngIf="it.locationOrLink" class="fs-8 text-dark mb-1">
+              <strong>Lieu / Lien :</strong> {{ it.locationOrLink }}
+            </div>
+            <div *ngIf="it.comment" class="fs-8 text-secondary italic">
+              "{{ it.comment }}"
+            </div>
+            <div *ngIf="it.emailSent" class="fs-8 text-success mt-2">
+              ✓ Email de notification envoyé au candidat le {{ it.emailSentAt | date:'dd/MM/yyyy HH:mm' }}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-light" (click)="closeHistoryModal()">Fermer</button>
+        <button type="button" class="fluent-btn-primary" (click)="goToDetails(selectedCandidateForHistory.id)">
+          Ouvrir la fiche complète
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

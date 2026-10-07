@@ -1,54 +1,44 @@
-.kpi-card {
-  position: relative;
-  overflow: hidden;
-  padding: 1.25rem;
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
 }
-.kpi-title {
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 0.75rem;
+
+.cursor-pointer {
+  cursor: pointer;
 }
-.kpi-value {
-  font-size: 2.25rem;
-  font-weight: 800;
-  line-height: 1.1;
-  font-family: 'Outfit', sans-serif;
+
+.hover-bg-light:hover {
+  background-color: rgba(248, 250, 252, 0.8);
 }
-.kpi-icon-wrapper {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  span {
-    font-size: 1.5rem;
-  }
-  
-  &.primary {
-    background-color: var(--fluent-primary-light);
-    color: var(--fluent-primary);
-  }
-  &.warning {
-    background-color: var(--fluent-warning-light);
-    color: var(--fluent-warning);
-  }
-  &.success {
-    background-color: var(--fluent-success-light);
-    color: var(--fluent-success);
-  }
-  &.info {
-    background-color: rgba(13, 202, 240, 0.1);
-    color: #0dcaf0;
+
+.rotate {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
   }
 }
-.fs-7 {
-  font-size: 0.85rem;
-}
-.fs-8 {
-  font-size: 0.75rem;
-}
-.chart-container {
-  width: 100%;
+
+@media print {
+  .no-print,
+  .btn,
+  .dropdown,
+  .nav-tabs,
+  header,
+  sidebar,
+  nav {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+  .fluent-card {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    break-inside: avoid;
+  }
 }

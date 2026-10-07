@@ -1,0 +1,150 @@
+<div class="container-fluid px-0">
+  
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-primary fs-2">event_available</span>
+        Mes Entretiens
+      </h2>
+      <p class="text-secondary mb-0">Consultez, préparez et évaluez les entretiens de recrutement prévus avec vos candidats.</p>
+    </div>
+    <button class="btn btn-outline-secondary d-flex align-items-center gap-2 rounded-3" (click)="loadMyInterviews()">
+      <span class="material-symbols-outlined fs-5">refresh</span> Actualiser
+    </button>
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="fluent-card mb-4 p-3 rounded-4 shadow-sm bg-white border-0">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-7">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0">
+            <span class="material-symbols-outlined text-secondary fs-5">search</span>
+          </span>
+          <input type="text" class="form-control border-start-0 bg-light" 
+                 placeholder="Rechercher par nom de candidat ou poste..." 
+                 [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()">
+        </div>
+      </div>
+      <div class="col-md-5">
+        <select class="form-select bg-light border-0" [(ngModel)]="statusFilter" (change)="applyFilters()">
+          <option value="">Tous les statuts</option>
+          <option value="PLANIFIE">Planifiés</option>
+          <option value="TERMINE">Terminés</option>
+          <option value="ANNULE">Annulés</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-2 text-muted">Chargement de vos entretiens...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && filteredInterviews.length === 0" class="fluent-card p-5 text-center bg-white rounded-4 shadow-sm border-0">
+    <span class="material-symbols-outlined fs-1 text-muted mb-3">event_busy</span>
+    <h4>Aucun entretien trouvé</h4>
+    <p class="text-secondary mb-0">Aucun entretien ne correspond à vos critères de recherche.</p>
+  </div>
+
+  <!-- Interviews Table -->
+  <div *ngIf="!loading && filteredInterviews.length > 0" class="fluent-card rounded-4 shadow-sm bg-white overflow-hidden border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light border-bottom">
+          <tr>
+            <th class="ps-4">Candidat</th>
+            <th>Poste concerné</th>
+            <th>Date & Heure</th>
+            <th>Questions IA</th>
+            <th>Statut</th>
+            <th>Avis / Évaluation</th>
+            <th class="text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let it of filteredInterviews" class="cursor-pointer" (click)="openInterview(it.id)">
+            <td class="ps-4">
+              <div class="d-flex align-items-center gap-3">
+                <div class="avatar-circle bg-primary-subtle text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                  {{ (it.candidateFirstName?.charAt(0) || 'C') }}{{ (it.candidateLastName?.charAt(0) || '') }}
+                </div>
+                <div>
+                  <div class="fw-semibold text-dark">{{ it.candidateFirstName }} {{ it.candidateLastName }}</div>
+                  <div class="fs-8 text-secondary">{{ it.candidateEmail }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="fw-medium text-dark">{{ it.jobOfferTitle }}</div>
+              <div class="fs-8 text-muted" *ngIf="it.department"><span class="badge bg-light text-dark border">{{ it.department }}</span></div>
+            </td>
+            <td>
+              <div class="fw-semibold text-dark fs-7">{{ it.interviewDate | date:'dd/MM/yyyy' }} à {{ it.interviewTime }}</div>
+              <div class="fs-8 text-muted">{{ it.durationMinutes }} minutes ({{ getInterviewTypeLabel(it.type) }})</div>
+            </td>
+            <td>
+              <!-- Petit indicateur des questions -->
+              <span *ngIf="it.aiQuestionsStatus === 'TERMINEE'" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 fs-8 fw-semibold d-inline-flex align-items-center gap-1">
+                <span class="material-symbols-outlined fs-7">check_circle</span> Questions prêtes
+              </span>
+              <span *ngIf="it.aiQuestionsStatus === 'EN_ATTENTE'" class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 fs-8 fw-semibold d-inline-flex align-items-center gap-1">
+                <span class="spinner-border spinner-border-sm me-1" style="width: 10px; height: 10px;"></span> Génération…
+              </span>
+              <span *ngIf="it.aiQuestionsStatus === 'ERREUR'" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 fs-8 fw-semibold d-inline-flex align-items-center gap-1" [title]="it.aiQuestionsError || 'Erreur'">
+                <span class="material-symbols-outlined fs-7">error</span> Erreur
+              </span>
+              <span *ngIf="!it.aiQuestionsStatus" class="badge bg-light text-muted border rounded-pill px-2 py-1 fs-8">
+                Non générées
+              </span>
+            </td>
+            <td>
+              <span class="badge rounded-pill px-3 py-2 fs-8" [ngClass]="getStatusBadgeClass(it.status)">
+                {{ getStatusLabel(it.status) }}
+              </span>
+            </td>
+            <td>
+              <!-- Badge Avis Manager si TERMINE avec un avis -->
+              <div *ngIf="it.managerRecommendation" class="d-flex flex-column gap-1">
+                <span class="badge rounded-pill px-2 py-1 fs-8 fw-semibold d-inline-flex align-items-center gap-1" [ngClass]="getRecommendationBadgeClass(it.managerRecommendation)">
+                  <span class="material-symbols-outlined fs-7">{{ getRecommendationIcon(it.managerRecommendation) }}</span>
+                  {{ getRecommendationLabel(it.managerRecommendation) }}
+                </span>
+                <div *ngIf="it.managerRating" class="fs-8 text-warning">
+                  {{ '★'.repeat(it.managerRating) }}<span class="text-muted">{{ '☆'.repeat(5 - it.managerRating) }}</span>
+                </div>
+              </div>
+              <span *ngIf="!it.managerRecommendation" class="text-muted fs-8 fst-italic">
+                Non évalué
+              </span>
+            </td>
+            <td class="text-end pe-4" (click)="$event.stopPropagation()">
+              <button *ngIf="it.status === 'PLANIFIE'" 
+                      class="fluent-btn-primary btn-sm d-inline-flex align-items-center gap-1 rounded-3 fs-8"
+                      (click)="openInterview(it.id)">
+                <span class="material-symbols-outlined fs-6">play_arrow</span> Préparer / mener
+              </button>
+              <button *ngIf="it.status === 'TERMINE'" 
+                      class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 rounded-3 fs-8"
+                      (click)="openInterview(it.id)">
+                <span class="material-symbols-outlined fs-6">rate_review</span> Voir l'évaluation
+              </button>
+              <button *ngIf="it.status === 'ANNULE'" 
+                      class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 rounded-3 fs-8"
+                      (click)="openInterview(it.id)">
+                <span class="material-symbols-outlined fs-6">visibility</span> Consulter
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

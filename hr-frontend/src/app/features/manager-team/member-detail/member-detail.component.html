@@ -1,0 +1,257 @@
+<div class="member-detail-page" *ngIf="!loading && member">
+
+  <!-- ================================================================ -->
+  <!-- NAVIGATION RETOUR                                                 -->
+  <!-- ================================================================ -->
+  <div class="breadcrumb mb-4 d-flex align-items-center gap-2">
+    <button (click)="goBack()" class="back-btn">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Mon Équipe
+    </button>
+    <span class="material-symbols-outlined text-muted" style="font-size:1rem">chevron_right</span>
+    <span class="bc-current">{{ member.firstName }} {{ member.lastName }}</span>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ================================================================ -->
+    <!-- COLONNE GAUCHE — Carte identité                                   -->
+    <!-- ================================================================ -->
+    <div class="col-lg-4">
+      <div class="identity-card text-center">
+
+        <!-- Photo / Initiales -->
+        <div class="identity-avatar-wrapper mx-auto mb-3">
+          <img
+            *ngIf="member.photo || member.photoUrl"
+            [src]="member.photo || member.photoUrl || getPhotoUrl(member.id)"
+            [alt]="member.firstName + ' ' + member.lastName"
+            class="identity-avatar"
+            (error)="onImgError($event)" />
+          <div *ngIf="!member.photo && !member.photoUrl" class="identity-initials">
+            {{ getInitials(member) }}
+          </div>
+          <span class="identity-status-dot" [ngClass]="getStatusClass(member.status)"></span>
+        </div>
+
+        <!-- Nom + Poste -->
+        <h2 class="identity-name mb-1">{{ member.firstName }} {{ member.lastName }}</h2>
+        <p class="identity-position mb-2">{{ member.position || 'Poste non renseigné' }}</p>
+
+        <!-- Badge département -->
+        <span class="dept-badge mb-3 d-inline-flex align-items-center gap-1" *ngIf="member.departmentName || member.department">
+          <span class="material-symbols-outlined" style="font-size:0.9rem">corporate_fare</span>
+          {{ member.departmentName || member.department }}
+        </span>
+
+        <!-- Badge statut -->
+        <div class="mt-1">
+          <span class="status-pill" [ngClass]="getStatusClass(member.status)">
+            <span class="status-dot"></span>
+            {{ getStatusLabel(member.status) }}
+          </span>
+        </div>
+
+        <!-- Date d'embauche -->
+        <div class="hire-info mt-3 pt-3 border-top">
+          <span class="material-symbols-outlined text-muted" style="font-size:1rem">work</span>
+          <span class="text-muted" style="font-size:0.82rem">
+            Employé depuis {{ formatDate(member.hireDate) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- COLONNE DROITE — Informations                                     -->
+    <!-- ================================================================ -->
+    <div class="col-lg-8">
+
+      <!-- Coordonnées -->
+      <div class="info-card mb-4">
+        <div class="info-card-header">
+          <span class="material-symbols-outlined">contact_mail</span>
+          Coordonnées
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item" *ngIf="member.email">
+            <span class="info-label">Email</span>
+            <a [href]="'mailto:' + member.email" class="info-value link-value">
+              <span class="material-symbols-outlined" style="font-size:1rem">mail</span>
+              {{ member.email }}
+            </a>
+          </div>
+
+          <div class="info-item" *ngIf="member.phone">
+            <span class="info-label">Téléphone</span>
+            <a [href]="'tel:' + member.phone" class="info-value link-value">
+              <span class="material-symbols-outlined" style="font-size:1rem">phone</span>
+              {{ member.phone }}
+            </a>
+          </div>
+
+          <div class="info-item" *ngIf="member.address">
+            <span class="info-label">Adresse</span>
+            <span class="info-value">
+              <span class="material-symbols-outlined" style="font-size:1rem">location_on</span>
+              {{ member.address }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RH & Congés -->
+      <div class="info-card mb-4">
+        <div class="info-card-header">
+          <span class="material-symbols-outlined">badge</span>
+          Informations RH
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Département</span>
+            <span class="info-value">{{ member.departmentName || member.department || '—' }}</span>
+          </div>
+
+          <div class="info-item">
+            <span class="info-label">Poste</span>
+            <span class="info-value">{{ member.position || '—' }}</span>
+          </div>
+
+          <div class="info-item" *ngIf="member.hireDate">
+            <span class="info-label">Date d'embauche</span>
+            <span class="info-value">{{ formatFullDate(member.hireDate) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs congés -->
+      <div class="kpi-row row g-3">
+
+        <div class="col-sm-6">
+          <div class="kpi-mini kpi-leaves">
+            <span class="material-symbols-outlined kpi-icon">event_available</span>
+            <div>
+              <div class="kpi-num">{{ member.availableLeaveDays ?? '—' }}</div>
+              <div class="kpi-lbl">Jours de congé disponibles</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-6">
+          <div class="kpi-mini kpi-status">
+            <span class="material-symbols-outlined kpi-icon">person_check</span>
+            <div>
+              <div class="kpi-num">{{ getStatusLabel(member.status) }}</div>
+              <div class="kpi-lbl">Statut actuel</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================================================================ -->
+      <!-- HISTORIQUE DES FORMATIONS                                         -->
+      <!-- ================================================================ -->
+      <div class="info-card mt-4">
+        <div class="info-card-header d-flex justify-content-between align-items-center">
+          <div>
+            <span class="material-symbols-outlined">school</span>
+            Historique des Formations
+          </div>
+          <span class="badge bg-primary rounded-pill">{{ enrollments.length }}</span>
+        </div>
+
+        <div class="py-4 text-center text-muted" *ngIf="loadingEnrollments">
+          <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+          <div>Chargement des formations...</div>
+        </div>
+
+        <div class="py-5 text-center text-muted" *ngIf="!loadingEnrollments && enrollments.length === 0">
+          <span class="material-symbols-outlined mb-2" style="font-size: 2.5rem; color: #ccc;">school</span>
+          <div>Aucune formation trouvée pour ce collaborateur.</div>
+        </div>
+
+        <div class="list-group list-group-flush mt-2" *ngIf="!loadingEnrollments && enrollments.length > 0">
+          <div class="list-group-item px-0 py-3 border-bottom" *ngFor="let enroll of enrollments">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <h5 class="mb-1 text-dark fw-semibold">{{ enroll.training.title }}</h5>
+                <div class="d-flex gap-2 flex-wrap text-muted small">
+                  <span class="badge bg-light text-dark border">{{ enroll.training.category }}</span>
+                  <span class="badge bg-light text-primary border">{{ enroll.training.level }}</span>
+                  <span><i class="material-icons align-middle" style="font-size: 14px">person</i> {{ enroll.training.trainer }}</span>
+                </div>
+              </div>
+              <span class="badge rounded-pill"
+                [ngClass]="{
+                  'bg-success-subtle text-success': enroll.status === 'Terminée',
+                  'bg-warning-subtle text-warning': enroll.status === 'En cours',
+                  'bg-secondary-subtle text-secondary': enroll.status === 'À venir' || enroll.status === 'INSCRIT'
+                }">
+                {{ enroll.status }}
+              </span>
+            </div>
+            
+            <div class="row align-items-center mt-3 g-3">
+              <div class="col-md-5 small text-muted">
+                <div><strong>Inscrit le :</strong> {{ enroll.enrollmentDate | date:'dd/MM/yyyy' }}</div>
+                <div *ngIf="enroll.training.startDate"><strong>Dates :</strong> {{ enroll.training.startDate }} <span *ngIf="enroll.training.endDate">au {{ enroll.training.endDate }}</span></div>
+              </div>
+              <div class="col-md-5">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="small text-muted">Progression</span>
+                  <span class="small fw-semibold">{{ enroll.progression }}%</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar" 
+                       role="progressbar" 
+                       [style.width.%]="enroll.progression" 
+                       [ngClass]="{'bg-success': enroll.progression === 100, 'bg-primary': enroll.progression < 100}"></div>
+                </div>
+              </div>
+              <div class="col-md-2 text-end">
+                <button *ngIf="enroll.progression === 100" 
+                        (click)="downloadCertificate(enroll)" 
+                        class="btn btn-sm btn-outline-success d-flex align-items-center justify-content-center w-100"
+                        title="Télécharger le certificat">
+                  <span class="material-symbols-outlined" style="font-size: 18px;">workspace_premium</span>
+                  <span class="ms-1 d-none d-md-inline">Certificat</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Chargement -->
+<div *ngIf="loading" class="py-5 text-center">
+  <div class="spinner-border text-warning" role="status">
+    <span class="visually-hidden">Chargement...</span>
+  </div>
+  <p class="text-muted mt-3">Chargement du profil...</p>
+</div>
+
+<!-- Erreur -->
+<div *ngIf="!loading && (!member || error)" class="py-5 text-center bg-white rounded shadow-sm my-4">
+  <div class="mb-3">
+    <span class="material-symbols-outlined text-warning" style="font-size:3rem">person_off</span>
+  </div>
+  <h4 class="fw-bold text-dark mb-2">Membre introuvable</h4>
+  <p class="text-muted fs-7 mb-3">{{ errorMessage || "Cet employé n'appartient pas à votre équipe ou n'existe pas dans la base." }}</p>
+  <div class="d-flex justify-content-center gap-2">
+    <button (click)="retry()" class="btn btn-sm btn-outline-warning rounded-pill px-4">
+      <span class="material-symbols-outlined fs-6 align-middle me-1">refresh</span>
+      Réessayer
+    </button>
+    <button (click)="goBack()" class="btn btn-sm btn-secondary rounded-pill px-4">
+      <span class="material-symbols-outlined fs-6 align-middle me-1">arrow_back</span>
+      Retour à l'équipe
+    </button>
+  </div>
+</div>

@@ -1,93 +1,40 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { HrDocument } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DocumentService {
+  private apiUrl = 'http://localhost:8087/api/documents';
   private docsSubject = new BehaviorSubject<HrDocument[]>([]);
   public docs$ = this.docsSubject.asObservable();
 
-  private defaultDocs: HrDocument[] = [
-    {
-      id: 1,
-      name: 'Contrat_Travail_Ahmed_Alami.pdf',
-      type: 'Contrat',
-      dateUploaded: '2023-03-15',
-      size: '1.2 Mo',
-      url: 'contrats/contrat_ahmed.pdf'
-    },
-    {
-      id: 2,
-      name: 'Fiche_Paie_Mai_2026_Sara.pdf',
-      type: 'Fiche de paie',
-      dateUploaded: '2026-05-31',
-      size: '340 Ko',
-      url: 'paies/fiche_paie_mai_2026_sara.pdf'
-    },
-    {
-      id: 3,
-      name: 'Diplome_Master_IT_Sara.pdf',
-      type: 'Diplôme',
-      dateUploaded: '2024-01-08',
-      size: '2.5 Mo',
-      url: 'diplomes/diplome_master_sara.pdf'
-    },
-    {
-      id: 4,
-      name: 'Attestation_Securite_Marc.pdf',
-      type: 'Attestation',
-      dateUploaded: '2025-10-12',
-      size: '850 Ko',
-      url: 'attestations/attestation_securite_marc.pdf'
-    },
-    {
-      id: 5,
-      name: 'Contrat_Travail_Sophie_Martin.pdf',
-      type: 'Contrat',
-      dateUploaded: '2023-11-20',
-      size: '1.4 Mo',
-      url: 'contrats/contrat_sophie.pdf'
-    },
-    {
-      id: 6,
-      name: 'Fiche_Paie_Avril_2026_Ahmed.pdf',
-      type: 'Fiche de paie',
-      dateUploaded: '2026-04-30',
-      size: '342 Ko',
-      url: 'paies/fiche_paie_avril_2026_ahmed.pdf'
-    }
-  ];
+  constructor(private http: HttpClient) {}
 
-  constructor() {
-    const savedDocs = localStorage.getItem('hr_docs');
-    if (savedDocs) {
-      this.docsSubject.next(JSON.parse(savedDocs));
-    } else {
-      this.saveDocsToStorage(this.defaultDocs);
-    }
+  public loadDocumentsByEmployee(employeeId: number): Observable<HrDocument[]> {
+    return this.http.get<HrDocument[]>(`${this.apiUrl}/employee/${employeeId}`).pipe(
+      tap(docs => {
+        const mapped = docs.map(d => this.formatDoc(d));
+        this.docsSubject.next(mapped);
+      })
+    );
   }
 
-  private saveDocsToStorage(docs: HrDocument[]): void {
-    localStorage.setItem('hr_docs', JSON.stringify(docs));
-    this.docsSubject.next(docs);
+  public loadAllDocuments(): Observable<HrDocument[]> {
+    return this.http.get<HrDocument[]>(`${this.apiUrl}/all`).pipe(
+      tap(docs => {
+        const mapped = docs.map(d => this.formatDoc(d));
+        this.docsSubject.next(mapped);
+      })
+    );
   }
 
-  public getDocs(): HrDocument[] {
-    return this.docsSubject.value;
-  }
-
-  public getDocsCount(): number {
-    return this.docsSubject.value.length + 336; // Return 342 total to match requested KPI
-  }
-
-  public addDocument(name: string, type: HrDocument['type'], sizeBytes: number): void {
-    const current = this.docsSubject.value;
-    const nextId = current.length > 0 ? Math.max(...current.map(d => d.id)) + 1 : 1;
-    
-    // Format size
+  private formatDoc(doc: any): HrDocument {
     let sizeStr = '0 B';
+    const sizeBytes = doc.size;
     if (sizeBytes > 1024 * 1024) {
       sizeStr = (sizeBytes / (1024 * 1024)).toFixed(1) + ' Mo';
     } else if (sizeBytes > 1024) {
@@ -96,22 +43,35 @@ export class DocumentService {
       sizeStr = sizeBytes + ' Octets';
     }
 
-    const today = new Date().toISOString().split('T')[0];
-
-    const newDoc: HrDocument = {
-      id: nextId,
-      name,
-      type,
-      dateUploaded: today,
+    return {
+      ...doc,
+      dateUploaded: doc.uploadDate || doc.dateUploaded,
       size: sizeStr,
-      url: `uploads/${name}`
+      url: `${this.apiUrl}/${doc.id}/download`
     };
-    this.saveDocsToStorage([...current, newDoc]);
   }
 
-  public deleteDocument(id: number): void {
-    const current = this.docsSubject.value;
-    const filtered = current.filter(d => d.id !== id);
-    this.saveDocsToStorage(filtered);
+  public getDocsCount(): number {
+    return this.docsSubject.value.length;
+  }
+
+  public uploadDocument(file: File, name: string, type: string, employeeId?: number): Observable<HrDocument> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+    formData.append('type', type);
+    if (employeeId !== undefined && employeeId !== null) {
+      formData.append('employeeId', employeeId.toString());
+    }
+
+    return this.http.post<any>(`${this.apiUrl}/upload`, formData);
+  }
+
+  public downloadDocument(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${id}/download`, { responseType: 'blob' });
+  }
+
+  public deleteDocument(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

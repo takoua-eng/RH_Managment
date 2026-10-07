@@ -1,0 +1,176 @@
+.employee-leave-page {
+  .fluent-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .solde-display {
+    h1 {
+      line-height: 1;
+    }
+  }
+
+  // Form Control overrides
+  .form-label {
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+  }
+
+  .form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: #334155;
+    background-color: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      border-color: var(--bs-primary, #2563eb);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      outline: none;
+    }
+
+    &.is-invalid {
+      border-color: #ef4444;
+      &:focus {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+      }
+    }
+  }
+
+  // Custom Table styles
+  .custom-table {
+    width: 100%;
+    margin-bottom: 0;
+
+    th {
+      border-bottom: 2px solid #f1f5f9;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    td {
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .italic-reason {
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-style: italic;
+    }
+  }
+
+  // Status Badges
+  .badge {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    display: inline-block;
+    text-align: center;
+  }
+
+  .badge-pending {
+    background-color: #fef3c7;
+    color: #d97706;
+  }
+
+  .badge-approved {
+    background-color: #dcfce7;
+    color: #15803d;
+  }
+
+  .badge-rejected {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .badge-secondary {
+    background-color: #f1f5f9;
+    color: #475569;
+  }
+
+  // Fluent buttons
+  .fluent-btn-danger-sm {
+    background-color: #fee2e2;
+    color: #ef4444;
+    border: none;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+
+    &:hover {
+      background-color: #fecaca;
+      transform: scale(1.05);
+    }
+  }
+}
+
+// Dark Mode adaptations
+[data-theme="dark"] {
+  .employee-leave-page {
+    .fluent-card {
+      background: #1e293b;
+      border-color: rgba(255, 255, 255, 0.08);
+
+      h2, h5, h1 {
+        color: #f8fafc !important;
+      }
+    }
+
+    .form-control, .form-select {
+      background-color: #0f172a;
+      border-color: #334155;
+      color: #f8fafc;
+
+      &:focus {
+        border-color: var(--bs-primary, #2563eb);
+      }
+    }
+
+    .custom-table {
+      th {
+        border-bottom-color: #334155;
+        color: #94a3b8;
+      }
+
+      td {
+        border-bottom-color: #334155;
+        color: #e2e8f0;
+      }
+    }
+
+    .badge-pending {
+      background-color: rgba(217, 119, 6, 0.15);
+      color: #fbbf24;
+    }
+
+    .badge-approved {
+      background-color: rgba(21, 128, 61, 0.15);
+      color: #4ade80;
+    }
+
+    .badge-rejected {
+      background-color: rgba(185, 28, 28, 0.15);
+      color: #f87171;
+    }
+
+    .badge-secondary {
+      background-color: #334155;
+      color: #cbd5e1;
+    }
+  }
+}

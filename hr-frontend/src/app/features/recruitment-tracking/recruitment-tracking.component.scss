@@ -1,0 +1,106 @@
+.badge-step {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.step-arrow {
+  color: #a1a5b7;
+}
+
+.col-md-1-5 {
+  flex: 0 0 auto;
+  width: 12.5%;
+}
+
+@media (max-width: 992px) {
+  .col-md-1-5 {
+    width: 50%;
+  }
+}
+
+.avatar-initials {
+  width: 36px;
+  height: 36px;
+  font-size: 0.85rem;
+}
+
+.bg-purple {
+  background-color: #6f42c1 !important;
+}
+
+.bg-indigo-subtle {
+  background-color: #e0cffc !important;
+}
+
+.text-indigo {
+  color: #59359a !important;
+}
+
+.border-indigo {
+  border-color: #a578ff !important;
+}
+
+.timeline-stepper {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 40px;
+    right: 40px;
+    height: 2px;
+    background-color: #e9ecef;
+    z-index: 1;
+  }
+  
+  .timeline-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    flex: 1;
+
+    .timeline-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .timeline-content {
+      font-size: 0.8rem;
+    }
+  }
+}
+
+.fluent-btn-primary {
+  background-color: #0078d4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #106ebe;
+    color: white;
+  }
+}

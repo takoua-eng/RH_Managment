@@ -1,0 +1,425 @@
+<div class="container-fluid px-0">
+
+  <!-- Floating Print & Header Actions -->
+  <div class="d-flex align-items-center justify-content-between mb-4 no-print">
+    <div class="d-flex align-items-center gap-3">
+      <button class="btn btn-light rounded-circle shadow-sm" (click)="goBack()">
+        <span class="material-symbols-outlined fs-5">arrow_back</span>
+      </button>
+      <div>
+        <h2 class="fw-bold mb-0" *ngIf="interview">
+          Entretien : {{ interview.candidateFirstName }} {{ interview.candidateLastName }}
+        </h2>
+        <span class="text-secondary fs-8" *ngIf="interview">
+          Poste : <strong>{{ interview.jobOfferTitle }}</strong>
+        </span>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-2" *ngIf="interview">
+      <button class="btn btn-outline-secondary d-flex align-items-center gap-1 rounded-3 fs-8" (click)="printPage()">
+        <span class="material-symbols-outlined fs-6">print</span> Imprimer
+      </button>
+      <button class="btn btn-outline-primary d-flex align-items-center gap-1 rounded-3 fs-8" (click)="goToCandidate()">
+        <span class="material-symbols-outlined fs-6">person</span> Fiche candidat
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-5 no-print">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-2 text-muted">Chargement de l'entretien...</p>
+  </div>
+
+  <div *ngIf="!loading && !interview" class="fluent-card bg-white p-4 rounded-4 shadow-sm my-4 text-center no-print border-0">
+    <div class="alert alert-danger rounded-3 p-4 mb-3">
+      <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+        <span class="material-symbols-outlined fs-3 text-danger">error</span>
+        <h5 class="fw-bold mb-0 text-danger">Impossible de charger l'entretien</h5>
+      </div>
+      <p class="mb-0 fs-7 text-dark">{{ errorMessage || 'Entretien introuvable.' }}</p>
+    </div>
+    <div class="d-flex justify-content-center gap-2">
+      <button type="button" class="fluent-btn-primary d-inline-flex align-items-center gap-2" (click)="retryLoad()" *ngIf="interviewId > 0">
+        <span class="material-symbols-outlined fs-6">refresh</span> Réessayer
+      </button>
+      <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" (click)="goBack()">
+        <span class="material-symbols-outlined fs-6">arrow_back</span> Retour à mes entretiens
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div *ngIf="!loading && interview">
+
+    <!-- Print-Only Header -->
+    <div class="print-only mb-4">
+      <h2 class="fw-bold mb-1">Entretien de Recrutement</h2>
+      <div>Candidat : <strong>{{ interview.candidateFirstName }} {{ interview.candidateLastName }}</strong></div>
+      <div>Poste : <strong>{{ interview.jobOfferTitle }}</strong> ({{ interview.department }})</div>
+      <div>Date : {{ interview.interviewDate | date:'dd/MM/yyyy' }} à {{ interview.interviewTime }} ({{ interview.durationMinutes }} min)</div>
+      <hr>
+    </div>
+
+    <!-- En-tête de l'entretien (Card Header) -->
+    <div class="fluent-card bg-white p-4 rounded-4 shadow-sm mb-4 border-0 no-print">
+      <div class="row g-3 align-items-center">
+        <div class="col-md-7">
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-circle bg-primary-subtle text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; font-size: 1.2rem;">
+              {{ (interview.candidateFirstName?.charAt(0) || 'C') }}{{ (interview.candidateLastName?.charAt(0) || '') }}
+            </div>
+            <div>
+              <h4 class="fw-bold mb-1 text-dark">{{ interview.candidateFirstName }} {{ interview.candidateLastName }}</h4>
+              <div class="text-secondary fs-7 d-flex align-items-center gap-3 flex-wrap">
+                <span><strong class="text-dark">Poste :</strong> {{ interview.jobOfferTitle }}</span>
+                <span>•</span>
+                <span><strong class="text-dark">Département :</strong> {{ interview.department || 'Non précisé' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-5 text-md-end">
+          <div class="d-flex flex-column align-items-md-end gap-1">
+            <div class="fs-7 fw-semibold text-dark d-flex align-items-center gap-1">
+              <span class="material-symbols-outlined fs-6 text-primary">calendar_today</span>
+              {{ interview.interviewDate | date:'dd MMMM yyyy' }} à {{ interview.interviewTime }}
+            </div>
+            <div class="fs-8 text-secondary">
+              Durée prévue : {{ interview.durationMinutes }} min | 
+              Durée estimée questions : <strong>{{ aiQuestions?.duree_estimee_min || interview.durationMinutes }} min</strong>
+            </div>
+            <div class="mt-1">
+              <span class="badge rounded-pill px-3 py-1 fs-8" [ngClass]="getStatusBadgeClass(interview.status)">
+                {{ getStatusLabel(interview.status) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages Flash -->
+    <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4 no-print">
+      <span class="material-symbols-outlined align-middle me-2">check_circle</span>
+      {{ successMessage }}
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4 no-print">
+      <span class="material-symbols-outlined align-middle me-2">error</span>
+      {{ errorMessage }}
+    </div>
+
+    <!-- SECTION QUESTIONS DE L'ENTRETIEN -->
+    <div class="fluent-card bg-white p-4 rounded-4 shadow-sm mb-4 border-0">
+      
+      <!-- Card Title & Toolbar -->
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom no-print">
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
+          <span class="material-symbols-outlined">quiz</span>
+          Guide d'entretien IA
+        </h5>
+
+        <div class="d-flex align-items-center gap-3">
+          <!-- Auto-save Status Indicator -->
+          <div class="fs-8 d-flex align-items-center gap-1" *ngIf="saveStatus">
+            <span *ngIf="saveStatus === 'saving'" class="text-muted d-inline-flex align-items-center gap-1">
+              <span class="spinner-border spinner-border-sm me-1" style="width: 12px; height: 12px;"></span> Enregistrement…
+            </span>
+            <span *ngIf="saveStatus === 'saved'" class="text-success d-inline-flex align-items-center gap-1 fw-semibold">
+              <span class="material-symbols-outlined fs-7">check</span> Enregistré
+            </span>
+            <span *ngIf="saveStatus === 'error'" class="text-danger d-inline-flex align-items-center gap-1 fw-semibold">
+              <span class="material-symbols-outlined fs-7">error</span> Erreur d'enregistrement
+            </span>
+          </div>
+
+          <!-- Regenerate Button -->
+          <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 rounded-3 fs-8"
+                  [disabled]="isRegenerating || interview.status === 'ANNULE'"
+                  (click)="confirmRegenerate()">
+            <span class="material-symbols-outlined fs-7" [class.rotate]="isRegenerating">refresh</span>
+            {{ isRegenerating ? 'Génération…' : 'Régénérer les questions' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Explicative note -->
+      <p class="text-muted fs-8 fst-italic mb-4">
+        Questions suggérées par l'IA à partir du CV et de l'offre. Adaptez-les librement au fil de l'entretien.
+      </p>
+
+      <!-- Status Check: EN_ATTENTE -->
+      <div *ngIf="interview.aiQuestionsStatus === 'EN_ATTENTE' || isRegenerating" class="text-center py-5 bg-light rounded-4 my-3 no-print">
+        <div class="spinner-border text-primary mb-3" role="status"></div>
+        <h5 class="fw-semibold text-dark">Génération des questions en cours…</h5>
+        <p class="text-secondary fs-8 mb-0">L'IA prépare le guide d'entretien sur mesure pour ce candidat. Actualisation automatique…</p>
+      </div>
+
+      <!-- Status Check: ERREUR -->
+      <div *ngIf="interview.aiQuestionsStatus === 'ERREUR' && !isRegenerating" class="alert alert-danger rounded-4 p-4 my-3 no-print">
+        <div class="d-flex align-items-start gap-3">
+          <span class="material-symbols-outlined text-danger fs-2">error</span>
+          <div>
+            <h5 class="fw-bold mb-1">Erreur lors de la génération des questions</h5>
+            <p class="mb-3 fs-8">{{ interview.aiQuestionsError || 'Une erreur est survenue lors de la génération par l\'IA.' }}</p>
+            <button class="fluent-btn-primary btn-sm d-inline-flex align-items-center gap-1" (click)="confirmRegenerate()">
+              <span class="material-symbols-outlined fs-6">refresh</span> Réessayer la génération
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Check: Empty / Null -->
+      <div *ngIf="!interview.aiQuestionsStatus && !aiQuestions && !isRegenerating" class="text-center py-5 bg-light rounded-4 my-3 no-print">
+        <span class="material-symbols-outlined fs-1 text-muted mb-2">find_in_page</span>
+        <h5 class="fw-semibold text-dark">Aucune question générée pour cet entretien</h5>
+        <p class="text-secondary fs-8 mb-3">Cliquez ci-dessous pour lancer la génération IA du guide d'entretien.</p>
+        <button class="fluent-btn-primary d-inline-flex align-items-center gap-2" (click)="confirmRegenerate()">
+          <span class="material-symbols-outlined fs-6">auto_awesome</span> Générer les questions
+        </button>
+      </div>
+
+      <!-- Display Questions Grouped by Category -->
+      <div *ngIf="aiQuestions && aiQuestions.questions && aiQuestions.questions.length > 0 && interview.aiQuestionsStatus === 'TERMINEE' && !isRegenerating">
+        
+        <!-- Progress Bar -->
+        <div class="mb-4 p-3 bg-light rounded-3 no-print">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fs-8 fw-bold text-uppercase text-secondary">Progression de l'entretien</span>
+            <span class="fs-8 fw-bold text-primary">{{ askedQuestionsCount }} / {{ totalQuestionsCount }} questions posées ({{ progressPercent }} %)</span>
+          </div>
+          <div class="progress" style="height: 10px;">
+            <div class="progress-bar bg-success rounded-pill" role="progressbar" 
+                 [style.width.%]="progressPercent" 
+                 [attr.aria-valuenow]="progressPercent" aria-valuemin="0" aria-valuemax="100">
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories Loop -->
+        <div *ngFor="let catGroup of groupedQuestions; trackBy: trackByCategory" class="mb-4">
+          <div class="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
+            <h6 class="fw-bold mb-0 text-dark">{{ catGroup.category }}</h6>
+            <span class="badge bg-primary-subtle text-primary rounded-pill fs-8">{{ catGroup.items.length }}</span>
+          </div>
+
+          <!-- Questions List -->
+          <div *ngFor="let item of catGroup.items; trackBy: trackByQuestion" class="border rounded-3 p-3 mb-3 bg-white shadow-xs question-card" [class.border-success-subtle]="questionNotesMap[item.globalIndex]?.posee">
+            <div class="d-flex align-items-start gap-3">
+              
+              <!-- Checkbox Posée -->
+              <div class="form-check mt-1 no-print">
+                <input class="form-check-input custom-checkbox" type="checkbox" 
+                       [id]="'q_check_' + item.globalIndex"
+                       [disabled]="interview.status === 'ANNULE'"
+                       [ngModel]="questionNotesMap[item.globalIndex]?.posee"
+                       (ngModelChange)="onQuestionPoseeChange(item.globalIndex, $event)">
+              </div>
+
+              <div class="flex-grow-1">
+                <!-- Question Text -->
+                <div class="d-flex justify-content-between align-items-start">
+                  <label [for]="'q_check_' + item.globalIndex" class="fw-bold text-dark fs-6 mb-1 cursor-pointer">
+                    {{ item.globalIndex + 1 }}. {{ item.question.question }}
+                  </label>
+                  <span *ngIf="questionNotesMap[item.globalIndex]?.posee" class="badge bg-success-subtle text-success fs-8 ms-2 flex-shrink-0 no-print">
+                    ✓ Posée
+                  </span>
+                </div>
+
+                <!-- Objectif -->
+                <div *ngIf="item.question.objectif" class="fs-8 text-secondary italic mb-2">
+                  <strong>Objectif :</strong> {{ item.question.objectif }}
+                </div>
+
+                <!-- Bloc repliable "Ce qu'il faut écouter" -->
+                <div *ngIf="item.question.a_ecouter && item.question.a_ecouter.length > 0" class="mb-3">
+                  <button class="btn btn-sm btn-link p-0 text-decoration-none fs-8 text-primary fw-semibold d-inline-flex align-items-center gap-1 no-print"
+                          (click)="toggleListenCollapse(item.globalIndex)">
+                    <span class="material-symbols-outlined fs-7">{{ isListenCollapsed(item.globalIndex) ? 'expand_more' : 'expand_less' }}</span>
+                    <span>Ce qu'il faut écouter</span>
+                  </button>
+
+                  <div *ngIf="!isListenCollapsed(item.globalIndex)" class="mt-2 bg-light p-3 rounded-3 border-start border-3 border-info no-print">
+                    <div class="fs-8 text-muted fw-bold mb-1">Indicateurs de réponse :</div>
+                    <ul class="mb-0 fs-8 ps-3 text-dark">
+                      <li *ngFor="let point of item.question.a_ecouter; trackBy: trackByPoint">{{ point }}</li>
+                    </ul>
+                  </div>
+
+                  <!-- Print Only Always Visible -->
+                  <div class="print-only mt-2 bg-light p-2 rounded border">
+                    <strong>Ce qu'il faut écouter :</strong>
+                    <ul class="mb-0 fs-8 ps-3">
+                      <li *ngFor="let point of item.question.a_ecouter; trackBy: trackByPoint">{{ point }}</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Textarea Notes -->
+                <div class="mt-2">
+                  <label class="form-label fs-8 text-muted fw-medium mb-1 no-print">Notes / Réponse du candidat</label>
+                  <textarea class="form-control bg-light fs-7" rows="2"
+                            placeholder="Saisissez vos remarques pendant l'entretien..."
+                            [disabled]="interview.status === 'ANNULE'"
+                            [ngModel]="questionNotesMap[item.globalIndex]?.notes"
+                            (ngModelChange)="onQuestionNotesChange(item.globalIndex, $event)"></textarea>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- SECTION ÉVALUATION FINALE -->
+    <div class="fluent-card bg-white p-4 rounded-4 shadow-sm mb-4 border-0">
+      <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-primary border-bottom pb-3">
+        <span class="material-symbols-outlined">rate_review</span>
+        Évaluation globale de l'entretien
+      </h5>
+
+      <!-- IF INTERVIEW IS ANNULE -->
+      <div *ngIf="interview.status === 'ANNULE'" class="alert alert-secondary mb-0">
+        Cet entretien a été <strong>ANNULÉ</strong>. L'évaluation est en lecture seule.
+      </div>
+
+      <!-- IF FEEDBACK SUBMITTED AND NOT IN EDIT MODE -->
+      <div *ngIf="interview.status !== 'ANNULE' && isFeedbackSubmitted && !isEditingFeedback">
+        <div class="bg-light p-4 rounded-4 border">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <div class="fs-8 text-muted mb-1">Avis final du manager :</div>
+              <span class="badge rounded-pill px-3 py-2 fs-7 fw-bold me-3" [ngClass]="getRecommendationBadgeClass(interview.managerRecommendation)">
+                <span class="material-symbols-outlined fs-6 align-middle me-1">{{ getRecommendationIcon(interview.managerRecommendation) }}</span>
+                {{ getRecommendationLabel(interview.managerRecommendation) }}
+              </span>
+              
+              <!-- Stars Display -->
+              <span class="fs-5 text-warning align-middle ms-2" *ngIf="interview.managerRating">
+                {{ '★'.repeat(interview.managerRating) }}<span class="text-muted">{{ '☆'.repeat(5 - interview.managerRating) }}</span>
+                <span class="fs-7 text-dark fw-bold ms-1">({{ interview.managerRating }}/5)</span>
+              </span>
+            </div>
+
+            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 rounded-3 fs-8 no-print" (click)="openEditFeedback()">
+              <span class="material-symbols-outlined fs-6">edit</span> Modifier l'évaluation
+            </button>
+          </div>
+
+          <div class="mb-2" *ngIf="interview.managerFeedback">
+            <div class="fs-8 text-muted mb-1 fw-bold">Commentaires & Remarques :</div>
+            <p class="text-dark bg-white p-3 rounded-3 mb-0 fs-7 border" style="white-space: pre-line;">
+              {{ interview.managerFeedback }}
+            </p>
+          </div>
+
+          <div class="fs-8 text-muted fst-italic mt-3" *ngIf="interview.feedbackSubmittedAt">
+            Soumis le {{ interview.feedbackSubmittedAt | date:'dd/MM/yyyy à HH:mm' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- FORMULAIRE DE SOUMISSION D'AVIS (Si pas d'avis OU en mode edition) -->
+      <div *ngIf="interview.status !== 'ANNULE' && (!isFeedbackSubmitted || isEditingFeedback)" class="no-print">
+        
+        <form (ngSubmit)="submitFeedback()">
+          
+          <!-- Avis : 3 cartes radio -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark fs-7 mb-2">1. Avis général <span class="text-danger">*</span></label>
+            <div class="row g-3">
+              
+              <!-- FAVORABLE -->
+              <div class="col-md-4">
+                <div class="card border rounded-4 text-center p-3 cursor-pointer option-card"
+                     [class.border-success]="feedbackForm.recommendation === 'FAVORABLE'"
+                     [class.bg-success-subtle]="feedbackForm.recommendation === 'FAVORABLE'"
+                     (click)="feedbackForm.recommendation = 'FAVORABLE'">
+                  <span class="material-symbols-outlined fs-1 text-success mb-1">thumb_up</span>
+                  <div class="fw-bold text-success">Favorable</div>
+                  <div class="fs-8 text-secondary mt-1">Candidat très prometteur, profil recommandé.</div>
+                </div>
+              </div>
+
+              <!-- RESERVE -->
+              <div class="col-md-4">
+                <div class="card border rounded-4 text-center p-3 cursor-pointer option-card"
+                     [class.border-warning]="feedbackForm.recommendation === 'RESERVE'"
+                     [class.bg-warning-subtle]="feedbackForm.recommendation === 'RESERVE'"
+                     (click)="feedbackForm.recommendation = 'RESERVE'">
+                  <span class="material-symbols-outlined fs-1 text-warning mb-1">help_outline</span>
+                  <div class="fw-bold text-warning-emphasis">Réservé</div>
+                  <div class="fs-8 text-secondary mt-1">Des doutes ou points à approfondir.</div>
+                </div>
+              </div>
+
+              <!-- DEFAVORABLE -->
+              <div class="col-md-4">
+                <div class="card border rounded-4 text-center p-3 cursor-pointer option-card"
+                     [class.border-danger]="feedbackForm.recommendation === 'DEFAVORABLE'"
+                     [class.bg-danger-subtle]="feedbackForm.recommendation === 'DEFAVORABLE'"
+                     (click)="feedbackForm.recommendation = 'DEFAVORABLE'">
+                  <span class="material-symbols-outlined fs-1 text-danger mb-1">thumb_down</span>
+                  <div class="fw-bold text-danger">Défavorable</div>
+                  <div class="fs-8 text-secondary mt-1">Ne correspond pas aux exigences du poste.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Note globale (Étoiles) -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-dark fs-7 mb-2">2. Note globale <span class="text-danger">*</span></label>
+            <div class="d-flex align-items-center gap-2">
+              <span *ngFor="let star of [1, 2, 3, 4, 5]" 
+                    class="material-symbols-outlined fs-2 cursor-pointer star-icon"
+                    [class.text-warning]="star <= feedbackForm.rating"
+                    [class.text-muted]="star > feedbackForm.rating"
+                    (click)="feedbackForm.rating = star">
+                star
+              </span>
+              <span class="fw-bold text-dark fs-6 ms-2" *ngIf="feedbackForm.rating > 0">{{ feedbackForm.rating }} / 5</span>
+            </div>
+          </div>
+
+          <!-- Commentaire libre -->
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label fw-bold text-dark fs-7 mb-0">3. Commentaire & Remarques pour les RH</label>
+              <span class="fs-8 text-muted">{{ feedbackForm.comment.length }}/5000</span>
+            </div>
+            <textarea class="form-control bg-light fs-7" rows="4" maxlength="5000"
+                      placeholder="Bilan global de l'entretien, points forts, faiblesses observées..."
+                      [(ngModel)]="feedbackForm.comment" name="comment"></textarea>
+          </div>
+
+          <!-- Buttons -->
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-light" *ngIf="isEditingFeedback" (click)="isEditingFeedback = false">Annuler</button>
+            <button type="submit" class="fluent-btn-primary d-flex align-items-center gap-2"
+                    [disabled]="submittingFeedback || !feedbackForm.recommendation || feedbackForm.rating === 0">
+              <span class="spinner-border spinner-border-sm" *ngIf="submittingFeedback"></span>
+              <span class="material-symbols-outlined fs-6" *ngIf="!submittingFeedback">check_circle</span>
+              Enregistrer l'évaluation
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

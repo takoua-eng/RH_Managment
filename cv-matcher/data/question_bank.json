@@ -1,0 +1,152 @@
+{
+  "java": {
+    "approfondissement": {
+      "question": "Sur un de vos projets Java, comment avez-vous structuré le code (packages, classes, responsabilités) ? Donnez un exemple d'héritage ou d'interface que vous avez utilisé, et expliquez pourquoi.",
+      "a_ecouter": ["Notions de POO maîtrisées : encapsulation, héritage, interfaces, polymorphisme", "Une organisation du code justifiée, pas seulement décrite", "Un exemple tiré d'un vrai projet"]
+    },
+    "decouverte": {
+      "question": "Avez-vous déjà programmé dans un langage orienté objet ? Expliquez avec vos mots la différence entre une classe et un objet, puis entre une interface et une classe abstraite.",
+      "a_ecouter": ["Définitions correctes des notions de base", "Capacité à les illustrer par un exemple", "Transfert depuis un autre langage (C#, Python…)"]
+    }
+  },
+  "spring boot": {
+    "approfondissement": {
+      "question": "Comment est organisé un projet Spring Boot que vous avez réalisé (contrôleurs, services, repositories) ? À quoi sert concrètement l'injection de dépendances ?",
+      "a_ecouter": ["Architecture en couches bien comprise", "Rôle de l'injection de dépendances et des annotations (@Service, @Autowired…)", "Gestion des erreurs ou de la sécurité évoquée"]
+    },
+    "decouverte": {
+      "question": "Avez-vous déjà développé une API REST, avec n'importe quel framework ? Quelles méthodes HTTP utiliseriez-vous pour créer, lire, modifier et supprimer une ressource ?",
+      "a_ecouter": ["GET, POST, PUT/PATCH et DELETE correctement associés", "Notion de codes de retour HTTP (200, 201, 404…)", "Expérience transposable d'un autre framework"]
+    }
+  },
+  "javafx": {
+    "approfondissement": {
+      "question": "Dans votre application JavaFX, comment avez-vous séparé l'interface (FXML) de la logique ? Comment l'interface communique-t-elle avec la base de données ?",
+      "a_ecouter": ["Séparation vue / contrôleur / données", "Utilisation de FXML et des contrôleurs", "Accès aux données isolé (DAO, JDBC…)"]
+    },
+    "decouverte": {
+      "question": "Avez-vous déjà développé une interface graphique, desktop ou web ? Comment organisez-vous le lien entre les écrans et le code qui traite les données ?",
+      "a_ecouter": ["Notion de séparation interface / logique", "Gestion des événements utilisateur", "Expérience transposable"]
+    }
+  },
+  "angular": {
+    "approfondissement": {
+      "question": "Dans une application Angular que vous avez développée, comment les composants communiquaient-ils entre eux et avec le backend ? Quel rôle jouaient les services ?",
+      "a_ecouter": ["@Input/@Output et services partagés", "HttpClient et Observables", "Gestion du routing ou des formulaires"]
+    },
+    "decouverte": {
+      "question": "Avez-vous déjà travaillé avec un framework frontend (React, Vue, Angular) ? Qu'est-ce qu'un composant, et comment récupère-t-il des données depuis une API ?",
+      "a_ecouter": ["Notion de composant réutilisable", "Appels HTTP asynchrones", "Capacité à transposer vers Angular"]
+    }
+  },
+  "python": {
+    "approfondissement": {
+      "question": "Décrivez un script ou un programme Python que vous avez écrit. Quelles bibliothèques avez-vous utilisées, et comment avez-vous géré les erreurs ?",
+      "a_ecouter": ["Un usage réel et précis", "Des bibliothèques adaptées au besoin", "Gestion des exceptions (try/except)"]
+    },
+    "decouverte": {
+      "question": "Avez-vous déjà automatisé une tâche avec un langage de script (Python, Bash, PowerShell) ? Quelle tâche choisiriez-vous d'automatiser dans ce poste ?",
+      "a_ecouter": ["Réflexe d'automatisation", "Un exemple concret, même simple", "Lien avec les missions du poste"]
+    }
+  },
+  "sql": {
+    "approfondissement": {
+      "question": "Comment écririez-vous une requête qui donne, pour chaque département, le nombre d'employés et le salaire moyen, en ne gardant que les départements de plus de 5 personnes ?",
+      "a_ecouter": ["GROUP BY avec COUNT et AVG", "HAVING (et non WHERE) pour filtrer les groupes", "Une jointure si les données sont dans deux tables"]
+    },
+    "decouverte": {
+      "question": "Avez-vous déjà interrogé une base de données ? Expliquez la différence entre INNER JOIN et LEFT JOIN avec un exemple.",
+      "a_ecouter": ["Compréhension des jointures", "Un exemple concret", "Honnêteté sur son niveau réel"]
+    }
+  },
+  "base de donnees": {
+    "approfondissement": {
+      "question": "Comment avez-vous conçu le schéma de la base de données de l'un de vos projets ? Quelles tables, quelles relations, et comment avez-vous évité les doublons ?",
+      "a_ecouter": ["Clés primaires et étrangères", "Relations 1-N et N-N", "Notion de normalisation ou d'index"]
+    },
+    "decouverte": {
+      "question": "Si vous deviez stocker des candidats et les offres auxquelles ils postulent, quelles tables créeriez-vous, et comment les relieriez-vous ?",
+      "a_ecouter": ["Identification des entités", "Relation entre les tables", "Logique de modélisation, même sans vocabulaire technique"]
+    }
+  },
+  "git": {
+    "approfondissement": {
+      "question": "Comment travaillez-vous avec Git en équipe ? Décrivez votre façon d'utiliser les branches, et comment vous avez déjà résolu un conflit de fusion.",
+      "a_ecouter": ["Branches de fonctionnalité, merge ou pull requests", "Résolution de conflit expliquée concrètement", "Messages de commit clairs"]
+    },
+    "decouverte": {
+      "question": "Comment gérez-vous aujourd'hui les versions de votre code et le travail à plusieurs sur un même projet ? Que savez-vous de Git ?",
+      "a_ecouter": ["Conscience du besoin de versionner le code", "Notions de commit, branche, dépôt distant", "Volonté d'apprendre"]
+    }
+  },
+  "docker": {
+    "approfondissement": {
+      "question": "Quelle est la différence entre une image et un conteneur Docker ? Décrivez un Dockerfile que vous avez écrit, et comment vous gérez les données qui doivent survivre au conteneur.",
+      "a_ecouter": ["Image = modèle, conteneur = instance en cours d'exécution", "Les étapes d'un Dockerfile", "Volumes pour la persistance des données"]
+    },
+    "decouverte": {
+      "question": "Avez-vous déjà rencontré le problème « ça marche sur ma machine mais pas ailleurs » ? Comment le résoudriez-vous ?",
+      "a_ecouter": ["Compréhension du problème d'environnement", "Idée de reproduire l'environnement (conteneur, machine virtuelle)", "Curiosité pour la conteneurisation"]
+    }
+  },
+  "linux": {
+    "approfondissement": {
+      "question": "Un service ne démarre plus sur un serveur Linux. Quelles commandes utilisez-vous, et dans quel ordre, pour trouver la cause ?",
+      "a_ecouter": ["systemctl status, journalctl ou lecture des logs", "Vérification des ports, de l'espace disque et des droits", "Une démarche méthodique"]
+    },
+    "decouverte": {
+      "question": "Quelles commandes Linux connaissez-vous pour naviguer dans les fichiers, voir les processus en cours et lire un fichier de log ?",
+      "a_ecouter": ["ls, cd, cat ou tail", "ps ou top", "Aisance avec le terminal"]
+    }
+  },
+  "ci/cd": {
+    "approfondissement": {
+      "question": "Décrivez un pipeline CI/CD que vous avez mis en place : quelles étapes, quels outils, et que se passe-t-il quand un test échoue ?",
+      "a_ecouter": ["Étapes build, test, déploiement", "Outils cités (Jenkins, GitLab CI…)", "Blocage du déploiement en cas d'échec"]
+    },
+    "decouverte": {
+      "question": "Selon vous, pourquoi automatiser la compilation, les tests et le déploiement d'une application ? Qu'est-ce qu'un pipeline ?",
+      "a_ecouter": ["Intérêt : fiabilité, rapidité, moins d'erreurs humaines", "Notion d'étapes enchaînées", "Curiosité pour les pratiques DevOps"]
+    }
+  },
+  "siem": {
+    "approfondissement": {
+      "question": "Comment un SIEM transforme-t-il des logs bruts en alertes ? Donnez un exemple de règle de corrélation que vous avez mise en place ou que vous mettriez en place.",
+      "a_ecouter": ["Collecte, normalisation, corrélation", "Un exemple de règle (ex. connexions échouées répétées)", "Gestion des faux positifs"]
+    },
+    "decouverte": {
+      "question": "Si vous deviez détecter des tentatives de connexion suspectes sur des serveurs, quelles informations collecteriez-vous, et comment les analyseriez-vous ?",
+      "a_ecouter": ["Logs d'authentification", "Idée de seuil ou de corrélation", "Une démarche structurée"]
+    }
+  },
+  "wazuh": {
+    "approfondissement": {
+      "question": "Comment avez-vous déployé Wazuh (manager, agents, sources de logs intégrées) ? Comment avez-vous adapté les règles pour réduire les faux positifs ?",
+      "a_ecouter": ["Architecture manager, agents, indexer", "Personnalisation des règles et des décodeurs", "Traitement des faux positifs"]
+    },
+    "decouverte": {
+      "question": "Avez-vous déjà utilisé un outil de supervision de sécurité ou un SIEM ? Que vous attendez-vous à trouver dans un outil comme Wazuh ?",
+      "a_ecouter": ["Notions de détection et d'alertes", "Un outil similaire cité", "Capacité à transposer"]
+    }
+  },
+  "firewall": {
+    "approfondissement": {
+      "question": "Comment concevez-vous les règles d'un pare-feu pour une nouvelle application exposée sur Internet ? Quelle est votre politique par défaut ?",
+      "a_ecouter": ["Politique par défaut « tout refuser »", "Ouverture minimale des seuls ports nécessaires", "Segmentation (DMZ, VLAN) et journalisation"]
+    },
+    "decouverte": {
+      "question": "À quoi sert un pare-feu, et quelle différence faites-vous entre filtrer par port et filtrer par application ?",
+      "a_ecouter": ["Rôle de filtrage du trafic", "Notions de ports et de protocoles", "Raisonnement logique"]
+    }
+  },
+  "vpn": {
+    "approfondissement": {
+      "question": "Quelle solution VPN avez-vous mise en place (IPsec, OpenVPN, WireGuard…) ? Comment avez-vous géré l'authentification des utilisateurs et la révocation des accès ?",
+      "a_ecouter": ["Un choix technique justifié", "Authentification forte (certificats, double facteur)", "Révocation des accès et journalisation"]
+    },
+    "decouverte": {
+      "question": "Comment permettriez-vous à des employés en télétravail d'accéder de façon sécurisée à des applications internes ?",
+      "a_ecouter": ["Idée de tunnel chiffré (VPN)", "Authentification des utilisateurs", "Principe du moindre privilège"]
+    }
+  }
+}

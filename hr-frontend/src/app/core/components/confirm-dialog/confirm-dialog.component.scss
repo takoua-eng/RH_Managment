@@ -1,0 +1,108 @@
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: overlayFadeIn 0.2s ease;
+}
+
+.confirm-card {
+  background-color: var(--fluent-surface, #ffffff);
+  border: var(--fluent-card-border, 1px solid #e5e7eb);
+  box-shadow: var(--fluent-shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.15));
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: 2rem 1.5rem;
+  animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.confirm-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+
+  .confirm-icon {
+    font-size: 2.25rem;
+  }
+
+  &.danger {
+    background-color: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+  }
+  &.warning {
+    background-color: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+  }
+  &.info {
+    background-color: rgba(99, 102, 241, 0.12);
+    color: #6366f1;
+  }
+}
+
+.confirm-title {
+  font-size: 1.2rem;
+  color: var(--fluent-text-primary, #1f2937);
+}
+
+.confirm-message {
+  line-height: 1.5;
+  color: var(--fluent-text-secondary, #6b7280);
+}
+
+.fluent-btn-action {
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &.btn-danger-variant {
+    background-color: #ef4444;
+    color: #ffffff;
+    &:hover {
+      background-color: #dc2626;
+    }
+  }
+
+  &.btn-warning-variant {
+    background-color: #f59e0b;
+    color: #ffffff;
+    &:hover {
+      background-color: #d97706;
+    }
+  }
+
+  &.btn-info-variant {
+    background-color: #6366f1;
+    color: #ffffff;
+    &:hover {
+      background-color: #4f46e5;
+    }
+  }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalScaleIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

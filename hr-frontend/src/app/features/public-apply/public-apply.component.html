@@ -1,0 +1,133 @@
+<div class="public-apply-page">
+  <div class="container py-5">
+    
+    <div class="text-center py-5" *ngIf="loading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+    </div>
+
+    <div class="alert alert-danger" *ngIf="errorMessage && !loading">
+      {{ errorMessage }}
+    </div>
+
+    <ng-container *ngIf="!loading && offer">
+      
+      <div class="fluent-card mb-4 border-top-primary">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <span class="badge bg-light text-dark border mb-2">{{ offer.department }}</span>
+            <h1 class="fw-bold mb-1">{{ offer.title }}</h1>
+            <div class="text-muted d-flex align-items-center gap-3 fs-7">
+              <span class="d-flex align-items-center gap-1"><span class="material-symbols-outlined fs-6">location_on</span> {{ offer.location || 'Non spécifié' }}</span>
+              <span class="d-flex align-items-center gap-1"><span class="material-symbols-outlined fs-6">work</span> {{ offer.contractType }}</span>
+              <span class="d-flex align-items-center gap-1"><span class="material-symbols-outlined fs-6">event</span> Fin : {{ offer.applicationDeadline | date:'shortDate' }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="row g-4 mt-2">
+          <div class="col-md-8">
+            <h5 class="fw-bold mb-2">Description du poste</h5>
+            <p class="text-secondary whitespace-pre-wrap">{{ offer.description }}</p>
+          </div>
+          <div class="col-md-4">
+            <div class="bg-light p-3 rounded-3">
+              <div class="mb-3">
+                <div class="fs-8 text-muted mb-1">Niveau d'expérience</div>
+                <div class="fw-medium">{{ offer.experienceLevel }}</div>
+              </div>
+              <div class="mb-3" *ngIf="offer.salaryRange">
+                <div class="fs-8 text-muted mb-1">Rémunération</div>
+                <div class="fw-medium">{{ offer.salaryRange }}</div>
+              </div>
+              <div>
+                <div class="fs-8 text-muted mb-1">Compétences recherchées</div>
+                <div class="fw-medium">{{ offer.requiredSkills }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fluent-card" *ngIf="!successMessage">
+        <h4 class="fw-bold mb-4">Postuler à cette offre</h4>
+        
+        <form #applyForm="ngForm" (ngSubmit)="submitApplication()">
+          
+          <h6 class="fw-bold text-primary mb-3">1. Informations Personnelles</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Prénom <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="firstName" [(ngModel)]="candidateData.firstName" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Nom <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="lastName" [(ngModel)]="candidateData.lastName" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Email <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" name="email" [(ngModel)]="candidateData.email" required email>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Téléphone <span class="text-danger">*</span></label>
+              <input type="tel" class="form-control" name="phone" [(ngModel)]="candidateData.phone" required pattern="^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$">
+            </div>
+            <div class="col-12">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Adresse</label>
+              <input type="text" class="form-control" name="address" [(ngModel)]="candidateData.address">
+            </div>
+          </div>
+
+          <h6 class="fw-bold text-primary mb-3">2. Profil</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Formation professionnelle</label>
+              <textarea class="form-control" name="education" [(ngModel)]="candidateData.education" rows="2" placeholder="Diplômes, écoles..."></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Expérience professionnelle</label>
+              <textarea class="form-control" name="experience" [(ngModel)]="candidateData.experience" rows="3" placeholder="Détaillez vos expériences passées..."></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Compétences clés</label>
+              <input type="text" class="form-control" name="skills" [(ngModel)]="candidateData.skills" placeholder="ex: Java, Angular, Gestion de projet">
+            </div>
+          </div>
+
+          <h6 class="fw-bold text-primary mb-3">3. Documents (Format PDF)</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">CV <span class="text-danger">*</span></label>
+              <input type="file" class="form-control" accept=".pdf" (change)="onFileChange($event, 'cv')" required>
+              <div class="form-text">Taille maximale : 5 Mo. Format PDF.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Lettre de motivation <span class="text-danger">*</span></label>
+              <input type="file" class="form-control" accept=".pdf" (change)="onFileChange($event, 'ml')" required>
+              <div class="form-text">Taille maximale : 5 Mo. Format PDF.</div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end border-top pt-4">
+            <button type="submit" class="fluent-btn-primary d-flex align-items-center gap-2" [disabled]="!applyForm.form.valid || !cvFile || !motivationLetterFile || submitting">
+              <span class="spinner-border spinner-border-sm" *ngIf="submitting" role="status" aria-hidden="true"></span>
+              <span class="material-symbols-outlined fs-5" *ngIf="!submitting">send</span>
+              Soumettre ma candidature
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Success Screen -->
+      <div class="fluent-card text-center py-5" *ngIf="successMessage">
+        <span class="material-symbols-outlined text-success mb-3" style="font-size: 64px;">check_circle</span>
+        <h3 class="fw-bold mb-3">Félicitations !</h3>
+        <p class="text-muted fs-5 mb-4">{{ successMessage }}</p>
+        <button class="fluent-btn-primary" (click)="closePage()">Retour à l'accueil</button>
+      </div>
+
+    </ng-container>
+
+  </div>
+</div>

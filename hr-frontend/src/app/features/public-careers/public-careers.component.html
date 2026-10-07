@@ -1,0 +1,535 @@
+<div class="public-careers-page">
+  <!-- Hero Section -->
+  <section class="hero-section text-white position-relative overflow-hidden">
+    <!-- Decorative CSS Background Shapes -->
+    <div class="hero-shape hero-shape-1"></div>
+    <div class="hero-shape hero-shape-2"></div>
+    <div class="hero-shape hero-shape-3"></div>
+    <div class="hero-grid-overlay"></div>
+
+    <div class="container position-relative z-2 hero-content pt-5 pb-5">
+      <div class="row align-items-center justify-content-center text-center">
+        <div class="col-lg-10 col-xl-8">
+          
+          <!-- Animated Counter Badge -->
+          <div class="d-inline-flex align-items-center gap-2 px-3.5 py-2 rounded-pill hero-badge mb-4 animate-fade-in-up">
+            <span class="pulse-dot"></span>
+            <span class="badge-text fw-medium">
+              <strong class="fs-6 counter-number">{{ animatedCount() }}</strong> 
+              {{ animatedCount() > 1 ? 'offres d\'emploi ouvertes' : 'offre d\'emploi ouverte' }}
+            </span>
+          </div>
+
+          <!-- Main Title -->
+          <h1 class="hero-title fw-extrabold display-4 mb-3 animate-fade-in-up delay-1">
+            Bâtissez votre avenir <br class="d-none d-sm-inline" />
+            <span class="gradient-text">avec nos équipes d'exception</span>
+          </h1>
+
+          <!-- Subtitle -->
+          <p class="hero-subtitle lead text-light opacity-90 mb-4 mx-auto animate-fade-in-up delay-2">
+            Rejoignez une entreprise dynamique et innovante. Découvrez nos opportunités professionnelles et donnez un nouvel élan à votre carrière.
+          </p>
+
+          <!-- Action Button -->
+          <div class="d-flex justify-content-center gap-3 mb-4 animate-fade-in-up delay-3">
+            <button class="btn btn-hero-primary rounded-pill px-4 py-3 fw-semibold shadow-lg d-flex align-items-center gap-2" (click)="scrollToOffers()">
+              <span>Voir les offres</span>
+              <span class="material-symbols-outlined fs-5">arrow_downward</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Search & Filters Card -->
+    <div class="container position-relative z-3 floating-search-container animate-fade-in-up delay-4">
+      <div class="floating-search-card p-4 rounded-4 shadow-lg bg-white border border-light-subtle">
+        
+        <div class="row g-3 align-items-center">
+          
+          <!-- Search input with 300ms RxJS debounce -->
+          <div class="col-lg-7 col-md-12">
+            <label for="career-search-input" class="form-label fs-8 text-uppercase tracking-wider fw-bold text-muted mb-2 d-flex align-items-center gap-1">
+              <span class="material-symbols-outlined fs-6 text-primary">search</span>
+              Rechercher une offre
+            </label>
+            <div class="input-group search-input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted">
+                <span class="material-symbols-outlined fs-5">search</span>
+              </span>
+              <input 
+                id="career-search-input"
+                type="text" 
+                class="form-control bg-light border-start-0 py-2 shadow-none" 
+                placeholder="Titre, département, lieu, compétence, description..." 
+                [ngModel]="searchQuery()" 
+                (ngModelChange)="onSearchInput($event)"
+              >
+              @if (searchQuery()) {
+                <button 
+                  type="button" 
+                  class="btn btn-light border border-start-0 text-muted" 
+                  (click)="clearSearch()"
+                  aria-label="Effacer la recherche"
+                >
+                  <span class="material-symbols-outlined fs-6">close</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Department dropdown with dynamic counts -->
+          <div class="col-lg-5 col-md-12">
+            <label for="career-department-select" class="form-label fs-8 text-uppercase tracking-wider fw-bold text-muted mb-2 d-flex align-items-center gap-1">
+              <span class="material-symbols-outlined fs-6 text-primary">domain</span>
+              Département
+            </label>
+            <select 
+              id="career-department-select"
+              class="form-select bg-light py-2 shadow-none" 
+              [ngModel]="departmentFilter()" 
+              (ngModelChange)="setDepartmentFilter($event)"
+            >
+              <option value="">Tous les départements ({{ getDepartmentCount('') }})</option>
+              @for (dept of availableDepartments(); track dept) {
+                <option [value]="dept">
+                  {{ dept }} ({{ getDepartmentCount(dept) }})
+                </option>
+              }
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Contract Type Chips -->
+        <div class="mt-3 pt-3 border-top">
+          <label class="form-label fs-8 text-uppercase tracking-wider fw-bold text-muted mb-2 d-flex align-items-center gap-1">
+            <span class="material-symbols-outlined fs-6 text-primary">badge</span>
+            Type de contrat
+          </label>
+
+          <div class="d-flex flex-wrap gap-2">
+            <button 
+              type="button" 
+              class="btn btn-chip" 
+              [class.active]="!contractFilter()" 
+              (click)="clearContract()"
+            >
+              Tous <span class="chip-count">({{ offers().length }})</span>
+            </button>
+            
+            @for (type of availableContractTypes(); track type) {
+              <button 
+                type="button" 
+                class="btn btn-chip" 
+                [class.active]="contractFilter().toLowerCase() === type.toLowerCase()" 
+                (click)="toggleContractFilter(type)"
+              >
+                {{ type }} <span class="chip-count">({{ getContractCount(type) }})</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Active Filter Badges Bar -->
+        @if (hasActiveFilters()) {
+          <div class="active-filters-bar mt-3 pt-3 border-top d-flex flex-wrap align-items-center gap-2">
+            <span class="text-muted fs-8 fw-semibold text-uppercase me-1">Filtres actifs :</span>
+            
+            @if (searchQuery()) {
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1-5 d-inline-flex align-items-center gap-1 fs-7">
+                <span>Recherche: "{{ searchQuery() }}"</span>
+                <span class="material-symbols-outlined fs-6 cursor-pointer ms-1 remove-icon" (click)="clearSearch()">close</span>
+              </span>
+            }
+            
+            @if (departmentFilter()) {
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1-5 d-inline-flex align-items-center gap-1 fs-7">
+                <span>Département: {{ departmentFilter() }}</span>
+                <span class="material-symbols-outlined fs-6 cursor-pointer ms-1 remove-icon" (click)="clearDepartment()">close</span>
+              </span>
+            }
+
+            @if (contractFilter()) {
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1-5 d-inline-flex align-items-center gap-1 fs-7">
+                <span>Contrat: {{ contractFilter() }}</span>
+                <span class="material-symbols-outlined fs-6 cursor-pointer ms-1 remove-icon" (click)="clearContract()">close</span>
+              </span>
+            }
+
+            <button 
+              type="button" 
+              class="btn btn-link btn-sm text-danger text-decoration-none p-0 ms-auto fw-medium d-inline-flex align-items-center gap-1" 
+              (click)="clearAllFilters()"
+            >
+              <span class="material-symbols-outlined fs-6">delete_sweep</span>
+              Tout effacer
+            </button>
+          </div>
+        }
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Offers List Section -->
+  <div class="container main-content-container pb-5" id="offers-section">
+    
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p class="text-muted mt-3">Chargement des opportunités en cours...</p>
+      </div>
+    } @else if (errorMessage()) {
+      <!-- Error -->
+      <div class="alert alert-danger shadow-sm rounded-4 my-4">
+        <div class="d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined">error</span>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      </div>
+    } @else {
+      <!-- Offers List & Sort Header -->
+      <div>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+          <h3 class="fw-bold mb-0 text-dark fs-4" aria-live="polite">
+            Nos opportunités actuelles
+            @if (filteredOffers().length > 0) {
+              <span class="badge bg-primary-subtle text-primary ms-2 fs-7 fw-semibold rounded-pill">
+                {{ filteredOffers().length }}
+              </span>
+            }
+          </h3>
+          
+          <!-- Sorting dropdown -->
+          <div class="d-flex align-items-center gap-2">
+            <label for="career-sort-select" class="text-muted small fw-medium text-nowrap d-flex align-items-center gap-1">
+              <span class="material-symbols-outlined fs-6">sort</span> Trier par :
+            </label>
+            <select 
+              id="career-sort-select"
+              class="form-select form-select-sm bg-white shadow-sm border-light-subtle rounded-3 py-1-5 ps-3 pe-4 fw-medium text-secondary" 
+              [ngModel]="sortBy()" 
+              (ngModelChange)="setSortBy($event)"
+              style="width: auto;"
+            >
+              <option value="recent">Plus récentes</option>
+              <option value="title">Titre A-Z</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        @if (filteredOffers().length === 0) {
+          <div class="text-center py-5 bg-white rounded-4 shadow-sm my-3 border">
+            <span class="material-symbols-outlined text-secondary opacity-50" style="font-size: 56px;">work_off</span>
+            <h5 class="mt-3 fw-semibold text-secondary">Aucune offre ne correspond à vos critères</h5>
+            <p class="text-muted small mb-3">Essayez de modifier vos mots-clés ou de réinitialiser vos filtres.</p>
+            <button class="btn btn-primary rounded-pill px-4 py-2" (click)="clearAllFilters()">
+              Réinitialiser tous les filtres
+            </button>
+          </div>
+        }
+
+        <!-- Grid of Offers -->
+        <div class="row g-4">
+          @for (offer of visibleOffers(); track offer.id) {
+            <div class="col-lg-6">
+              <div 
+                class="offer-card bg-white p-4 rounded-4 shadow-sm h-100 d-flex flex-column transition-hover position-relative" 
+                (click)="goToOffer(offer.id, offer.title)" 
+                (keydown.enter)="goToOffer(offer.id, offer.title)" 
+                (keydown.space)="$event.preventDefault(); goToOffer(offer.id, offer.title)" 
+                tabindex="0" 
+                role="link" 
+                [attr.aria-label]="'Postuler à l\'offre ' + offer.title + ' en ' + offer.contractType + ' chez ' + offer.department"
+                style="cursor: pointer;"
+              >
+                <!-- Card Header: Dept badge with Icon + Social Share + Badges (Nouveau & Contract Type) -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <span class="badge bg-light text-primary border border-primary-subtle rounded-pill px-3 py-2 fw-medium d-inline-flex align-items-center gap-1">
+                    <span class="material-symbols-outlined fs-6 text-primary">{{ getDepartmentIcon(offer.department) }}</span>
+                    {{ offer.department }}
+                  </span>
+
+                  <!-- Social Share Action Buttons -->
+                  <div class="d-flex align-items-center gap-1 ms-auto me-2" (click)="$event.stopPropagation()">
+                    <button 
+                      type="button" 
+                      class="btn btn-sm btn-light border rounded-circle p-1.5 d-flex align-items-center justify-content-center text-secondary" 
+                      title="Partager sur LinkedIn"
+                      (click)="shareOnLinkedIn($event, offer)"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H3.254v7.225h1.689zm-1.2-8.212c.587 0 .954-.39.954-.878-.01-.497-.367-.878-.944-.878-.578 0-.954.381-.954.878 0 .488.367.878.944.878h.01s.01.001 0 0zm4.887 8.212V9.658c0-.188.013-.376.069-.51.151-.376.495-.766 1.073-.766.757 0 1.06.577 1.06 1.423v4.048h1.691V9.526c0-2.072-1.107-3.037-2.584-3.037-1.198 0-1.73.664-2.028 1.127h.023V6.169h-1.69c.022.478 0 7.225 0 7.225h1.69z"/>
+                      </svg>
+                    </button>
+                    
+                    <button 
+                      type="button" 
+                      class="btn btn-sm btn-light border rounded-circle p-1.5 d-flex align-items-center justify-content-center text-success" 
+                      title="Partager sur WhatsApp"
+                      (click)="shareOnWhatsApp($event, offer)"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.646 1.93 6.56 6.56 0 0 1 1.928 4.647c-.004 3.639-2.961 6.596-6.578 6.596z"/>
+                      </svg>
+                    </button>
+
+                    <button 
+                      type="button" 
+                      class="btn btn-sm btn-light border rounded-circle p-1.5 d-flex align-items-center justify-content-center text-muted" 
+                      [title]="copiedOfferId() === offer.id ? 'Lien copié !' : 'Copier le lien'"
+                      (click)="copyOfferLink($event, offer)"
+                    >
+                      @if (copiedOfferId() === offer.id) {
+                        <span class="material-symbols-outlined fs-6 text-success">check</span>
+                      } @else {
+                        <span class="material-symbols-outlined fs-6">link</span>
+                      }
+                    </button>
+                  </div>
+
+                  <div class="d-flex align-items-center gap-2">
+                    @if (isNewOffer(offer.publicationDate)) {
+                      <span class="badge badge-new rounded-pill px-2.5 py-1.5 d-inline-flex align-items-center gap-1">
+                        <span class="material-symbols-outlined fs-6">bolt</span> Nouveau
+                      </span>
+                    }
+
+                    <span [class]="'badge rounded-pill px-3 py-1-5 fw-semibold ' + getContractBadgeClass(offer.contractType)">
+                      {{ offer.contractType }}
+                    </span>
+                  </div>
+                </div>
+                
+                <!-- Title -->
+                <h4 class="fw-bold mb-2 text-dark offer-title">{{ offer.title }}</h4>
+
+                <!-- Metadata info -->
+                <div class="text-secondary small d-flex flex-wrap gap-3 mb-3">
+                  <span class="d-flex align-items-center gap-1">
+                    <span class="material-symbols-outlined fs-6 text-primary">location_on</span> 
+                    {{ offer.location || 'Flexible' }}
+                  </span>
+                  <span class="d-flex align-items-center gap-1">
+                    <span class="material-symbols-outlined fs-6 text-primary">history_edu</span> 
+                    {{ offer.experienceLevel }}
+                  </span>
+                </div>
+                
+                <!-- Description -->
+                <p class="text-muted fs-7 mb-4 line-clamp-2 flex-grow-1">{{ offer.description }}</p>
+                
+                <!-- Card Footer: Relative date & Direct "Postuler" Button -->
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-auto">
+                  @if (offer.publicationDate) {
+                    <span class="fs-8 text-muted d-flex align-items-center gap-1">
+                      <span class="material-symbols-outlined fs-6">schedule</span>
+                      {{ getRelativeDate(offer.publicationDate) }}
+                    </span>
+                  }
+
+                  <button 
+                    type="button" 
+                    class="btn btn-primary rounded-pill px-4 py-2 fw-semibold btn-apply d-inline-flex align-items-center gap-2 shadow-sm"
+                    (click)="$event.stopPropagation(); goToOffer(offer.id, offer.title)"
+                  >
+                    <span>Postuler</span>
+                    <span class="material-symbols-outlined fs-6 hover-arrow">arrow_forward</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Load More / Pagination Controls -->
+        @if (filteredOffers().length > 0) {
+          <div class="text-center mt-5 pt-3">
+            <p class="text-muted small mb-3 fw-medium">
+              <strong class="text-dark">{{ visibleOffers().length }}</strong> sur <strong class="text-dark">{{ filteredOffers().length }}</strong> {{ filteredOffers().length > 1 ? 'offres affichées' : 'offre affichée' }}
+            </p>
+
+            <!-- Progress bar indicator -->
+            <div class="progress mx-auto mb-4 bg-light border" style="max-width: 280px; height: 6px; border-radius: 10px;">
+              <div 
+                class="progress-bar bg-primary rounded-pill" 
+                role="progressbar" 
+                [style.width.%]="(visibleOffers().length / filteredOffers().length) * 100" 
+                [attr.aria-valuenow]="visibleOffers().length" 
+                [attr.aria-valuemin]="0" 
+                [attr.aria-valuemax]="filteredOffers().length"
+                style="transition: width 0.4s ease;"
+              ></div>
+            </div>
+
+            @if (displayedCount() < filteredOffers().length) {
+              <button 
+                type="button" 
+                class="btn btn-outline-primary rounded-pill px-4 py-2-5 fw-semibold shadow-sm d-inline-flex align-items-center gap-2 transition-hover"
+                (click)="loadMoreOffers()"
+              >
+                <span>Voir plus d'offres</span>
+                <span class="material-symbols-outlined fs-5">expand_more</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+
+  <!-- Section 1: Pourquoi nous rejoindre ? -->
+  <section class="why-us-section py-5 bg-white border-top border-bottom">
+    <div class="container py-4">
+      <div class="text-center mb-5">
+        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1-5 fw-semibold mb-2">Nos Engagements</span>
+        <h2 class="fw-bold display-6 text-dark">Pourquoi nous rejoindre ?</h2>
+        <p class="text-muted lead mx-auto" style="max-width: 600px;">
+          Un environnement stimulant où chaque collaborateur est encouragé à grandir et s'épanouir au quotidien.
+        </p>
+      </div>
+
+      <div class="row g-4">
+        @for (perk of perks; track perk.title) {
+          <div class="col-md-6 col-lg-3">
+            <div class="perk-card p-4 rounded-4 bg-light-subtle h-100 border transition-hover">
+              <div class="perk-icon-wrapper rounded-3 mb-3 text-primary d-inline-flex align-items-center justify-content-center p-3 bg-primary-subtle">
+                <span class="material-symbols-outlined fs-3">{{ perk.icon }}</span>
+              </div>
+              <h5 class="fw-bold mb-2 text-dark">{{ perk.title }}</h5>
+              <p class="text-muted small mb-0 lh-base">{{ perk.description }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Bandeau de chiffres clés -->
+  <section class="stats-banner-section py-5 text-white position-relative overflow-hidden">
+    <div class="stats-bg-gradient"></div>
+    <div class="container position-relative z-2 py-3">
+      <div class="row g-4 justify-content-center text-center">
+        @for (stat of keyStats; track stat.label) {
+          <div class="col-6 col-md-3">
+            <div class="stat-box p-3">
+              <div class="display-5 fw-extrabold mb-1 stat-number text-white">
+                {{ stat.current }}{{ stat.suffix }}
+              </div>
+              <div class="text-light opacity-90 small fw-medium text-uppercase tracking-wider">
+                {{ stat.label }}
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Notre processus de recrutement -->
+  <section class="recruitment-process-section py-5">
+    <div class="container py-4">
+      <div class="text-center mb-5">
+        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1-5 fw-semibold mb-2">Transparence</span>
+        <h2 class="fw-bold display-6 text-dark">Notre processus de recrutement</h2>
+        <p class="text-muted lead mx-auto" style="max-width: 600px;">
+          Un parcours simple, réactif et humain en 4 étapes clés.
+        </p>
+      </div>
+
+      <div class="row g-4 timeline-horizontal justify-content-center">
+        @for (step of recruitmentSteps; track step.step; let last = $last) {
+          <div class="col-md-6 col-lg-3 position-relative">
+            <div class="step-card p-4 rounded-4 bg-white border shadow-sm h-100 d-flex flex-column align-items-center text-center">
+              <div class="step-number-badge mb-3 rounded-circle fw-bold text-white d-flex align-items-center justify-content-center shadow-sm">
+                {{ step.step }}
+              </div>
+              <h5 class="fw-bold mb-2 text-dark">{{ step.title }}</h5>
+              <p class="text-muted small mb-0 lh-base">{{ step.description }}</p>
+            </div>
+            @if (!last) {
+              <div class="timeline-arrow d-none d-lg-block">
+                <span class="material-symbols-outlined text-primary opacity-50">arrow_forward</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Foire aux Questions (FAQ) -->
+  <section class="faq-section py-5 bg-white border-top">
+    <div class="container py-4">
+      <div class="text-center mb-5">
+        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1-5 fw-semibold mb-2">Questions fréquentes</span>
+        <h2 class="fw-bold display-6 text-dark">Avez-vous des questions ?</h2>
+        <p class="text-muted lead mx-auto" style="max-width: 600px;">
+          Retrouvez les réponses aux interrogations les plus fréquentes des candidats.
+        </p>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="faq-accordion rounded-4 overflow-hidden border shadow-sm">
+            @for (faq of faqItems; track faq.question; let i = $index) {
+              <div class="faq-item border-bottom bg-white">
+                <button 
+                  type="button" 
+                  class="faq-header w-100 p-4 border-0 bg-transparent text-start d-flex justify-content-between align-items-center gap-3"
+                  (click)="toggleFaq(i)"
+                  [attr.aria-expanded]="openFaqIndex() === i"
+                >
+                  <span class="fw-semibold text-dark fs-6">{{ faq.question }}</span>
+                  <span class="material-symbols-outlined text-primary transition-transform" [class.rotate-180]="openFaqIndex() === i">
+                    expand_more
+                  </span>
+                </button>
+                
+                @if (openFaqIndex() === i) {
+                  <div class="faq-body px-4 pb-4 text-muted small lh-relaxed">
+                    {{ faq.answer }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: CTA Final - Candidature Spontanée -->
+  <section class="spontaneous-cta-section py-5 position-relative">
+    <div class="container py-3">
+      <div class="cta-card rounded-5 p-5 text-white text-center position-relative overflow-hidden shadow-lg">
+        <div class="cta-bg-glow"></div>
+        <div class="position-relative z-2 mx-auto" style="max-width: 640px;">
+          <span class="material-symbols-outlined display-4 mb-3 text-warning">send</span>
+          <h2 class="fw-extrabold display-6 mb-3">Aucune offre ne vous correspond ?</h2>
+          <p class="lead text-light opacity-90 mb-4">
+            Ne passez pas à côté de votre future opportunité ! Envoyez-nous votre CV en candidature spontanée et notre équipe RH étudiera votre profil.
+          </p>
+          <button 
+            type="button" 
+            class="btn btn-light rounded-pill px-5 py-3 fw-bold text-primary shadow-lg d-inline-flex align-items-center gap-2 hover-scale"
+            (click)="scrollToOffers()"
+          >
+            <span>Envoyer une candidature spontanée</span>
+            <span class="material-symbols-outlined fs-5">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>

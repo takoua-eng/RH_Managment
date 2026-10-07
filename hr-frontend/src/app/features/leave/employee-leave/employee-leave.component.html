@@ -1,0 +1,193 @@
+<div class="employee-leave-page py-4">
+  <div class="row">
+    <div class="col-12 mb-4">
+      <h2 class="fw-bold mb-1 text-dark">Mes Congés</h2>
+      <p class="text-muted mb-0">Consultez votre solde, soumettez de nouvelles demandes et suivez vos validations.</p>
+    </div>
+  </div>
+
+  <!-- Stats & Form Row -->
+  <div class="row g-4 mb-4">
+    <!-- Solde de Congés Card -->
+    <div class="col-lg-4">
+      <div class="fluent-card shadow-sm border-0 p-4 h-100 d-flex flex-column justify-content-between position-relative overflow-hidden">
+        <div class="solde-header mb-3">
+          <span class="material-symbols-outlined text-primary fs-3">beach_access</span>
+          <h5 class="fw-bold text-dark mt-2 mb-1">Solde Disponible</h5>
+          <p class="text-muted fs-8">Jours de congés payés restants</p>
+        </div>
+        <div class="solde-display my-3 text-center">
+          <h1 class="display-3 fw-bold text-primary mb-0">
+            {{ currentUser?.availableLeaveDays || 25 }}
+          </h1>
+          <span class="fs-7 fw-semibold text-muted">jours de congé</span>
+        </div>
+        <div class="solde-progress w-100 mt-2">
+          <div class="progress" style="height: 6px;">
+            <!-- Simple estimation out of 30 days maximum -->
+            <div class="progress-bar bg-primary" role="progressbar" 
+                 [style.width.%]="((currentUser?.availableLeaveDays || 25) / 30) * 100" 
+                 aria-valuenow="25" aria-valuemin="0" aria-valuemax="30">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Request Form Card -->
+    <div class="col-lg-8">
+      <div class="fluent-card shadow-sm border-0 p-4">
+        <h5 class="fw-bold mb-3 text-dark pb-2 border-bottom d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary fs-5">add_circle</span>
+          Nouvelle Demande de Congé
+        </h5>
+
+        <form [formGroup]="leaveForm" (ngSubmit)="onSubmit()">
+          <div class="row g-3 mb-3">
+            <!-- Type de Congé -->
+            <div class="col-md-4">
+              <label for="type" class="form-label fs-7 fw-semibold text-muted">Type de congé</label>
+              <select id="type" class="form-select" formControlName="type">
+                <option value="ANNUAL">Annuel (Payé)</option>
+                <option value="SICK">Maladie</option>
+                <option value="OTHER">RTT / Autre</option>
+              </select>
+            </div>
+
+            <!-- Date Début -->
+            <div class="col-md-4">
+              <label for="startDate" class="form-label fs-7 fw-semibold text-muted">Date de début</label>
+              <input type="date" id="startDate" class="form-control" formControlName="startDate" 
+                     [class.is-invalid]="leaveForm.get('startDate')?.invalid && leaveForm.get('startDate')?.touched" />
+            </div>
+
+            <!-- Date Fin -->
+            <div class="col-md-4">
+              <label for="endDate" class="form-label fs-7 fw-semibold text-muted">Date de fin</label>
+              <input type="date" id="endDate" class="form-control" formControlName="endDate" 
+                     [class.is-invalid]="(leaveForm.get('endDate')?.invalid && leaveForm.get('endDate')?.touched) || leaveForm.hasError('datesInverted')" />
+            </div>
+          </div>
+
+          <!-- Calculated Days Info Box -->
+          <div class="alert alert-info d-flex align-items-center justify-content-between border-0 shadow-xs mb-3 py-2 px-3 fs-7" *ngIf="calculatedDays > 0 && !leaveForm.hasError('datesInverted')">
+            <div class="d-flex align-items-center gap-2">
+              <span class="material-symbols-outlined text-info fs-5">info</span>
+              <span>Durée estimée de votre absence :</span>
+            </div>
+            <strong class="text-info fs-6">{{ calculatedDays }} jour{{ calculatedDays > 1 ? 's' : '' }}</strong>
+          </div>
+
+          <!-- Date validation warning -->
+          <div class="alert alert-danger d-flex align-items-center gap-2 border-0 shadow-xs mb-3 py-2 px-3 fs-7" *ngIf="leaveForm.hasError('datesInverted')">
+            <span class="material-symbols-outlined text-danger fs-5">warning</span>
+            <span>La date de fin doit être postérieure ou égale à la date de début.</span>
+          </div>
+
+          <!-- Motif -->
+          <div class="mb-3">
+            <label for="reason" class="form-label fs-7 fw-semibold text-muted">Motif (Facultatif)</label>
+            <textarea id="reason" class="form-control" rows="2" placeholder="Expliquez brièvement le motif de votre absence..." formControlName="reason"></textarea>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="d-flex justify-content-end">
+            <button type="submit" class="fluent-btn-primary d-flex align-items-center gap-2" [disabled]="submitting || leaveForm.invalid">
+              <span class="material-symbols-outlined fs-6" *ngIf="!submitting">send</span>
+              <div class="spinner-border spinner-border-sm text-white" role="status" *ngIf="submitting"></div>
+              <span>{{ submitting ? 'Envoi...' : 'Soumettre la demande' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages feedback -->
+  <div class="row mb-3" *ngIf="successMessage || errorMessage">
+    <div class="col-12">
+      <div *ngIf="successMessage" class="alert alert-success d-flex align-items-center gap-2 border-0 shadow-sm mb-0" role="alert">
+        <span class="material-symbols-outlined fs-5">check_circle</span>
+        <div class="fs-7 fw-medium">{{ successMessage }}</div>
+      </div>
+      <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center gap-2 border-0 shadow-sm mb-0" role="alert">
+        <span class="material-symbols-outlined fs-5">error</span>
+        <div class="fs-7 fw-medium">{{ errorMessage }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Card -->
+  <div class="row">
+    <div class="col-12">
+      <div class="fluent-card shadow-sm border-0 p-4">
+        <h5 class="fw-bold mb-4 text-dark pb-2 border-bottom d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary fs-5">history</span>
+          Historique de mes Demandes
+        </h5>
+
+        <div *ngIf="loading" class="py-4 text-center">
+          <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+          <span class="text-muted ms-2 fs-7">Chargement de votre historique...</span>
+        </div>
+
+        <div *ngIf="!loading && leaveHistory.length === 0" class="py-5 text-center text-muted">
+          <span class="material-symbols-outlined display-4 text-muted mb-2">calendar_today</span>
+          <p class="mb-0 fs-7">Vous n'avez soumis aucune demande de congé pour le moment.</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="!loading && leaveHistory.length > 0">
+          <table class="table align-middle custom-table">
+            <thead>
+              <tr class="text-muted fs-8 fw-semibold uppercase border-bottom text-start">
+                <th scope="col" class="py-3">Type</th>
+                <th scope="col" class="py-3">Date Début</th>
+                <th scope="col" class="py-3">Date Fin</th>
+                <th scope="col" class="py-3">Motif</th>
+                <th scope="col" class="py-3">Statut</th>
+                <th scope="col" class="py-3 text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody class="fs-7">
+              <tr *ngFor="let leave of leaveHistory" class="border-bottom text-start">
+                <td class="py-3 fw-semibold text-dark">
+                  {{ getTypeLabel(leave.type) }}
+                </td>
+                <td class="py-3 text-muted">
+                  {{ leave.startDate | date:'dd/MM/yyyy' }}
+                </td>
+                <td class="py-3 text-muted">
+                  {{ leave.endDate | date:'dd/MM/yyyy' }}
+                </td>
+                <td class="py-3 text-muted italic-reason">
+                  {{ leave.reason || '-' }}
+                </td>
+                <td class="py-3">
+                  <span class="badge px-3 py-1-5 rounded fw-medium fs-8" [class]="getStatusClass(leave.status)">
+                    {{ getStatusLabel(leave.status) }}
+                  </span>
+                  
+                  <!-- Show rejection reason tooltip/alert -->
+                  <div *ngIf="leave.status === 'REJECTED' && leave.reason" class="text-danger mt-1 fs-9 d-flex align-items-center gap-1">
+                    <span class="material-symbols-outlined fs-9">info</span>
+                    <span>Refusé pour : <em>{{ leave.reason }}</em></span>
+                  </div>
+                </td>
+                <td class="py-3 text-end">
+                  <!-- Cancel button only if status is PENDING -->
+                  <button *ngIf="leave.status === 'PENDING'" 
+                          (click)="cancelLeave(leave.id)" 
+                          class="fluent-btn-danger-sm btn-icon shadow-xs" 
+                          title="Annuler ma demande">
+                    <span class="material-symbols-outlined fs-6">delete</span>
+                  </button>
+                  <span *ngIf="leave.status !== 'PENDING'" class="text-muted fs-8">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

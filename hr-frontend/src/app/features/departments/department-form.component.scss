@@ -1,0 +1,12 @@
+.fluent-input {
+  border-radius: 8px;
+  border: 1px solid var(--fluent-border);
+  padding: 0.6rem 0.8rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--fluent-primary);
+    box-shadow: 0 0 0 3px var(--fluent-primary-light);
+  }
+}
+.fs-8 { font-size: 0.725rem; }

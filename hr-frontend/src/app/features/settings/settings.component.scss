@@ -13,3 +13,159 @@
 }
 .fs-7 { font-size: 0.85rem; }
 .fs-8 { font-size: 0.725rem; }
+.fs-9 { font-size: 0.675rem; }
+
+/* Profile Tab Content Styling */
+.profile-tab-content {
+  .fluent-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+  }
+
+  .divider {
+    height: 1px;
+    background-color: #f1f5f9;
+  }
+
+  // Avatar Upload Layout
+  .avatar-container {
+    width: 140px;
+    height: 140px;
+
+    .profile-avatar {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #ffffff;
+      transition: opacity 0.2s ease;
+    }
+
+    .avatar-upload-label {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 34px;
+      height: 34px;
+      background-color: var(--bs-primary, #2563eb);
+      color: #ffffff;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.2s;
+
+      &:hover {
+        background-color: #1d4ed8;
+        transform: scale(1.08);
+      }
+
+      &.disabled {
+        background-color: #cbd5e1;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .quick-info-list {
+    span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  // Form styles
+  .form-label {
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+  }
+
+  .form-control {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: #334155;
+    background-color: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      border-color: var(--bs-primary, #2563eb);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      outline: none;
+    }
+
+    &.is-invalid {
+      border-color: #ef4444;
+      &:focus {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+      }
+    }
+  }
+
+  // Readonly Lock
+  .readonly-wrapper {
+    .form-control[disabled] {
+      background-color: #f8fafc;
+      color: #64748b;
+      cursor: not-allowed;
+      padding-right: 36px;
+      border-color: #e2e8f0;
+    }
+
+    .readonly-lock {
+      position: absolute;
+      right: 12px;
+      bottom: 10px;
+      pointer-events: none;
+      color: #94a3b8;
+    }
+  }
+
+  .invalid-feedback {
+    color: #ef4444;
+    margin-top: 4px;
+  }
+}
+
+// Dark Mode Adaptations
+[data-theme="dark"] {
+  .profile-tab-content {
+    .fluent-card {
+      background: #1e293b;
+      border-color: rgba(255, 255, 255, 0.08);
+      
+      h2, h4, h5 {
+        color: #f8fafc !important;
+      }
+    }
+
+    .divider {
+      background-color: #334155;
+    }
+
+    .avatar-container {
+      .profile-avatar {
+        border-color: #1e293b;
+      }
+    }
+
+    .form-control {
+      background-color: #0f172a;
+      border-color: #334155;
+      color: #f8fafc;
+
+      &:focus {
+        border-color: var(--bs-primary, #2563eb);
+      }
+    }
+
+    .readonly-wrapper {
+      .form-control[disabled] {
+        background-color: #1e293b;
+        border-color: #334155;
+        color: #94a3b8;
+      }
+    }
+  }
+}

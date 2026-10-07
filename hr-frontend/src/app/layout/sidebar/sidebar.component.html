@@ -10,10 +10,10 @@
   </div>
 
   <nav class="sidebar-nav">
-    <a *ngFor="let item of navItems" 
-       [routerLink]="item.path" 
-       routerLinkActive="active" 
-       [routerLinkActiveOptions]="{exact: item.path === '/dashboard'}"
+    <a *ngFor="let item of navItems"
+       [routerLink]="item.path"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{exact: item.path === '/dashboard' || item.path === '/dashboard/employee'}"
        class="nav-link-item"
        [title]="item.label">
       <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
@@ -31,3 +31,5 @@
     </button>
   </div>
 </aside>
+
+

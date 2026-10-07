@@ -1,15 +1,17 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import keycloak from './keycloak.config';
+import { AuthService } from './core/services/auth.service';
 
 export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
   return () => {
     const router = inject(Router);
-    const roles: string[] = keycloak.realmAccess?.roles ?? [];
-    const hasAccess = allowedRoles.some(r => roles.includes(r));
+    const authService = inject(AuthService);
+    const userRoles = authService.getRoles();
+
+    const hasAccess = allowedRoles.some(r => userRoles.includes(r));
 
     if (!hasAccess) {
-      router.navigate(['/unauthorized']);
+      router.navigate(['/dashboard']);
       return false;
     }
     return true;

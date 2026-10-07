@@ -2,70 +2,367 @@
   <!-- Section Header -->
   <div class="row mb-4 align-items-center">
     <div class="col-12">
-      <h2 class="fw-bold mb-1">Catalogue de Formations</h2>
-      <p class="text-muted mb-0">Développez les compétences techniques de vos collaborateurs avec nos parcours certifiants.</p>
+      <h2 class="fw-bold mb-1">Espace Formations</h2>
+      <p class="text-muted mb-0">Consultez vos formations actives, inscrivez-vous à de nouveaux cours et téléchargez vos attestations de réussite.</p>
     </div>
   </div>
 
-  <!-- Training courses grid -->
-  <div class="row g-4">
-    <div class="col-md-6 col-lg-4" *ngFor="let course of courses">
-      <div class="fluent-card course-card d-flex flex-column h-100">
-        <div class="d-flex justify-content-between align-items-start mb-3">
-          <span class="fluent-badge" [ngClass]="getCourseBadgeClass(course.progression)">
-            {{ course.status }}
-          </span>
-          <div class="course-icon-box" [ngClass]="getCourseIconBg(course.name)">
-            <span class="material-symbols-outlined">{{ getCourseIcon(course.name) }}</span>
+  <!-- Messages Alerts -->
+  <div class="alert alert-success alert-dismissible fade show" role="alert" *ngIf="successMessage">
+    <span class="fs-7">{{ successMessage }}</span>
+    <button type="button" class="btn-close" (click)="successMessage = ''" aria-label="Close"></button>
+  </div>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert" *ngIf="errorMessage">
+    <span class="fs-7">{{ errorMessage }}</span>
+    <button type="button" class="btn-close" (click)="errorMessage = ''" aria-label="Close"></button>
+  </div>
+
+  <!-- Loader -->
+  <div class="text-center py-5" *ngIf="loading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- Mon Parcours Section -->
+    <div class="mb-5">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold fs-5 mb-0 d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary">school</span>
+          Mon Parcours de Formation ({{ getFilteredEnrollments().length }})
+        </h3>
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label text-muted fs-8 mb-0 whitespace-nowrap">Filtrer par statut:</label>
+          <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="myEnrollmentsStatusFilter">
+            <option value="">Tous</option>
+            <option value="Inscrit">Inscrit</option>
+            <option value="En cours">En cours</option>
+            <option value="Terminée">Terminée</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="row g-4" *ngIf="getFilteredEnrollments().length > 0">
+        <div class="col-md-6 col-lg-4" *ngFor="let enroll of getFilteredEnrollments()">
+          <div class="fluent-card course-card d-flex flex-column h-100 shadow-sm border">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <span class="fluent-badge" [ngClass]="getCourseBadgeClass(enroll.progression, enroll.status)">
+                {{ getCourseStatus(enroll.status, enroll.progression) }}
+              </span>
+              <div class="course-icon-box" [ngClass]="getCourseIconBg(enroll.training.title)">
+                <span class="material-symbols-outlined">{{ getCourseIcon(enroll.training.title) }}</span>
+              </div>
+            </div>
+
+            <h4 class="fw-bold mb-2 fs-5">{{ enroll.training.title }}</h4>
+            <p class="text-muted fs-7 flex-grow-1 mb-3">{{ enroll.training.description }}</p>
+
+            <div class="course-metadata fs-8 text-muted mb-3 border-top pt-2">
+              <div class="d-flex align-items-center gap-1 mb-1" *ngIf="enroll.training.trainer">
+                <span class="material-symbols-outlined fs-7">person</span>
+                <span><strong>Formateur :</strong> {{ enroll.training.trainer }}</span>
+              </div>
+              <div class="d-flex align-items-center gap-1 mb-1" *ngIf="enroll.training.startDate">
+                <span class="material-symbols-outlined fs-7">calendar_today</span>
+                <span><strong>Début :</strong> {{ enroll.training.startDate }}</span>
+              </div>
+              <div class="d-flex align-items-center gap-1 mb-1">
+                <span class="material-symbols-outlined fs-7">schedule</span>
+                <span><strong>Durée :</strong> {{ formatDuration(enroll.training.duration, enroll.training.location) }}</span>
+              </div>
+            </div>
+
+            <!-- Progress section -->
+            <div class="progress-section my-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted fs-8">Progression</span>
+                <span class="fw-bold fs-7">{{ enroll.progression }}%</span>
+              </div>
+              <div class="ascii-bar font-monospace fs-8 mb-2">
+                {{ getAsciiProgressBar(enroll.progression) }}
+              </div>
+              <div class="progress" style="height: 6px;">
+                <div class="progress-bar" 
+                     [style.width.%]="enroll.progression" 
+                     [ngClass]="{'bg-success': enroll.progression === 100, 'bg-primary': enroll.progression < 100}"></div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="mt-auto border-top pt-3 d-flex gap-2 flex-wrap align-items-center">
+              <button (click)="viewProgram(enroll.training, enroll)" class="btn btn-sm btn-light border flex-grow-1 py-2">
+                Syllabus
+              </button>
+              <button *ngIf="enroll.progression < 100 && enroll.status !== 'Annulée'" 
+                      (click)="study(enroll)" 
+                      class="fluent-btn-primary flex-grow-1 justify-content-center py-2">
+                <span class="material-symbols-outlined fs-6">menu_book</span>
+                Continuer
+              </button>
+              <ng-container *ngIf="enroll.progression === 100">
+                <span class="text-success fw-bold fs-8 flex-grow-1 text-center d-flex align-items-center justify-content-center gap-1">
+                  <span class="material-symbols-outlined fs-6">check_circle</span>
+                  Formation terminée
+                </span>
+                <button (click)="openCertificateModal(enroll)" 
+                        class="fluent-btn-primary flex-grow-1 justify-content-center bg-success py-2">
+                  <span class="material-symbols-outlined text-white fs-6">workspace_premium</span>
+                  Certificat
+                </button>
+              </ng-container>
+            </div>
           </div>
         </div>
+      </div>
 
-        <h4 class="fw-bold mb-2 fs-5">{{ course.name }}</h4>
-        <p class="text-muted fs-7 flex-grow-1">{{ course.description }}</p>
+      <div class="fluent-card text-center py-5 text-muted shadow-sm" *ngIf="getFilteredEnrollments().length === 0">
+        <span class="material-symbols-outlined fs-2 text-muted mb-2">auto_stories</span>
+        <p class="mb-0">Aucune formation ne correspond à vos critères ou vous n'êtes inscrit à aucune formation.</p>
+      </div>
+    </div>
 
-        <!-- Progress section -->
-        <div class="progress-section my-3" *ngIf="course.status !== 'Non commencé'">
+    <!-- Available Catalog Section -->
+    <div>
+      <h3 class="fw-bold fs-5 mb-3 d-flex align-items-center gap-2 border-top pt-4">
+        <span class="material-symbols-outlined text-success">library_books</span>
+        Catalogue des Formations disponibles ({{ getAvailableCatalog().length }})
+      </h3>
+
+      <!-- Filters -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <label class="form-label text-muted fs-8 mb-1">Rechercher</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><span class="material-symbols-outlined fs-6">search</span></span>
+            <input type="text" class="form-control border-start-0 ps-0" placeholder="Mot-clé..." [(ngModel)]="searchQuery">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label text-muted fs-8 mb-1">Catégorie</label>
+          <select class="form-select form-select-sm" [(ngModel)]="selectedCategory">
+            <option value="">Toutes</option>
+            <option value="Développement">Développement</option>
+            <option value="DevOps">DevOps</option>
+            <option value="Management">Management</option>
+            <option value="Soft Skills">Soft Skills</option>
+            <option value="Design">Design</option>
+            <option value="Data">Data</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label text-muted fs-8 mb-1">Niveau</label>
+          <select class="form-select form-select-sm" [(ngModel)]="selectedLevel">
+            <option value="">Tous</option>
+            <option value="Débutant">Débutant</option>
+            <option value="Intermédiaire">Intermédiaire</option>
+            <option value="Avancé">Avancé</option>
+            <option value="Expert">Expert</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label text-muted fs-8 mb-1">Disponibilité</label>
+          <select class="form-select form-select-sm" [(ngModel)]="selectedAvailability">
+            <option value="">Toutes</option>
+            <option value="available">Places disponibles</option>
+            <option value="full">Complet</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-4" *ngIf="getAvailableCatalog().length > 0">
+        <div class="col-md-6 col-lg-4" *ngFor="let course of getAvailableCatalog()">
+          <div class="fluent-card course-card d-flex flex-column h-100 shadow-sm border">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div class="d-flex gap-2 flex-wrap">
+                <span class="fluent-badge"
+                      [ngClass]="{
+                        'bg-success text-white': course.status === 'Disponible',
+                        'bg-warning text-dark': course.status === 'En cours',
+                        'bg-secondary text-white': course.status === 'Terminée' || course.status === 'Indisponible',
+                        'bg-danger text-white': course.status === 'Annulée'
+                      }">
+                  {{ course.status || 'Disponible' }}
+                </span>
+                <span class="fluent-badge bg-light text-dark border" *ngIf="course.category">{{ course.category }}</span>
+                <span class="fluent-badge bg-light text-primary border" *ngIf="course.level">{{ course.level }}</span>
+              </div>
+              <div class="course-icon-box" [ngClass]="getCourseIconBg(course.title)">
+                <span class="material-symbols-outlined">{{ getCourseIcon(course.title) }}</span>
+              </div>
+            </div>
+
+            <h4 class="fw-bold mb-2 fs-5">{{ course.title }}</h4>
+            <p class="text-muted fs-7 flex-grow-1 mb-2">{{ course.description }}</p>
+            
+            <div class="fs-8 text-secondary mb-3" *ngIf="course.objectives">
+              <strong>Objectifs :</strong> {{ course.objectives }}
+            </div>
+
+            <div class="course-metadata fs-8 text-muted mb-3 border-top pt-2">
+              <div class="row g-2">
+                <div class="col-6 d-flex align-items-center gap-1" *ngIf="course.trainer">
+                  <span class="material-symbols-outlined fs-7">person</span>
+                  <span class="text-truncate"><strong>Par:</strong> {{ course.trainer }}</span>
+                </div>
+                <div class="col-6 d-flex align-items-center gap-1" *ngIf="course.startDate">
+                  <span class="material-symbols-outlined fs-7">calendar_today</span>
+                  <span><strong>Date:</strong> {{ course.startDate }}</span>
+                </div>
+                <div class="col-6 d-flex align-items-center gap-1" *ngIf="course.duration">
+                  <span class="material-symbols-outlined fs-7">schedule</span>
+                  <span><strong>Durée:</strong> {{ course.duration }}</span>
+                </div>
+                <div class="col-6 d-flex align-items-center gap-1" *ngIf="course.mode || course.location">
+                  <span class="material-symbols-outlined fs-7">map</span>
+                  <span class="text-truncate"><strong>Mode:</strong> {{ course.mode || course.location }}</span>
+                </div>
+                <div class="col-12 d-flex align-items-center gap-1 mt-1">
+                  <span class="material-symbols-outlined fs-7 text-info">group</span>
+                  <span><strong>Places disponibles:</strong> <span [class.text-danger]="course.availableSeats === 0">{{ course.availableSeats !== undefined ? course.availableSeats : 'Non défini' }}</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="mt-auto border-top pt-3 d-flex gap-2">
+              <button (click)="viewProgram(course)" class="btn btn-sm btn-light border w-50 py-2">
+                Syllabus
+              </button>
+              <button *ngIf="course.status === 'Disponible' && (course.availableSeats === undefined || course.availableSeats > 0)"
+                      (click)="enroll(course)" 
+                      class="fluent-btn-primary w-50 justify-content-center py-2">
+                <span class="material-symbols-outlined fs-6">school</span>
+                S'inscrire
+              </button>
+              <button *ngIf="course.status !== 'Disponible' || course.availableSeats === 0"
+                      disabled 
+                      class="btn btn-sm btn-secondary w-50 justify-content-center py-2 opacity-75">
+                <span class="material-symbols-outlined fs-6">block</span>
+                {{ course.status === 'Terminée' ? 'Terminée' : (course.status === 'En cours' ? 'En cours' : 'Non disponible') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fluent-card text-center py-4 text-muted shadow-sm" *ngIf="getAvailableCatalog().length === 0">
+        <p class="mb-0">Vous êtes inscrit à toutes les formations disponibles dans le catalogue.</p>
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<!-- Detailed Syllabus Modal -->
+<div class="fluent-modal-overlay" *ngIf="showProgramModal" (click)="closeProgramModal()">
+  <div class="fluent-modal-card syllabus-modal-card" style="max-width: 760px;" (click)="$event.stopPropagation()">
+      <!-- Modal Header -->
+      <div class="modal-header d-flex justify-content-between align-items-start border-bottom pb-3">
+        <div>
+          <div class="d-flex gap-2 mb-2 flex-wrap">
+            <span class="badge bg-primary-subtle text-primary border" *ngIf="selectedTraining?.category">
+              {{ selectedTraining?.category }}
+            </span>
+            <span class="badge bg-light text-dark border" *ngIf="selectedTraining?.level">
+              {{ selectedTraining?.level }}
+            </span>
+            <span class="badge bg-info-subtle text-info border" *ngIf="selectedTraining?.mode || selectedTraining?.location">
+              {{ selectedTraining?.mode || selectedTraining?.location }}
+            </span>
+          </div>
+          <h4 class="fw-bold mb-1 fs-5 text-dark">{{ selectedTraining?.title }}</h4>
+          <div class="d-flex align-items-center gap-3 text-muted fs-8">
+            <span *ngIf="selectedTraining?.trainer"><i class="material-symbols-outlined fs-7 align-middle me-1">person</i>{{ selectedTraining?.trainer }}</span>
+            <span *ngIf="selectedTraining?.startDate"><i class="material-symbols-outlined fs-7 align-middle me-1">calendar_today</i>{{ selectedTraining?.startDate }} <ng-container *ngIf="selectedTraining?.endDate">au {{ selectedTraining?.endDate }}</ng-container></span>
+            <span *ngIf="selectedTraining?.duration"><i class="material-symbols-outlined fs-7 align-middle me-1">schedule</i>{{ selectedTraining?.duration }}</span>
+          </div>
+        </div>
+        <button (click)="closeProgramModal()" class="border-0 bg-transparent text-muted cursor-pointer p-1">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Enrollment Progress Bar if enrolled -->
+      <div class="px-3 pt-3" *ngIf="selectedEnrollmentForModal">
+        <div class="p-3 bg-light rounded border">
           <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="text-muted fs-8">Progression</span>
-            <span class="fw-bold fs-7">{{ course.progression }}%</span>
+            <span class="fw-semibold fs-7 text-dark">Votre progression dans cette formation</span>
+            <span class="badge" [ngClass]="selectedEnrollmentForModal.progression === 100 ? 'bg-success' : 'bg-primary'">
+              {{ selectedEnrollmentForModal.progression }}%
+            </span>
           </div>
-          
-          <!-- Custom requested visual layout: Block indicators + Smooth Bar -->
-          <div class="ascii-bar font-monospace fs-8 mb-2">
-            {{ getAsciiProgressBar(course.progression) }}
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar" [style.width.%]="selectedEnrollmentForModal.progression" [ngClass]="selectedEnrollmentForModal.progression === 100 ? 'bg-success' : 'bg-primary'"></div>
           </div>
+        </div>
+      </div>
 
-          <div class="progress" style="height: 6px;">
-            <div class="progress-bar" 
-                 [style.width.%]="course.progression" 
-                 [ngClass]="{'bg-success': course.progression === 100, 'bg-primary': course.progression < 100}"></div>
+      <div class="modal-body py-3 overflow-auto" style="max-height: 60vh;">
+        <!-- Description -->
+        <div class="mb-4" *ngIf="selectedTraining?.description">
+          <h5 class="fw-bold fs-7 mb-2 text-uppercase text-secondary tracking-wider">Description</h5>
+          <p class="text-dark fs-7 mb-0 leading-relaxed">{{ selectedTraining?.description }}</p>
+        </div>
+
+        <!-- Objectifs -->
+        <div class="mb-4" *ngIf="parsedObjectivesList.length > 0">
+          <h5 class="fw-bold fs-7 mb-2 text-uppercase text-secondary tracking-wider">Objectifs de la formation</h5>
+          <div class="objectives-list bg-light p-3 rounded border">
+            <div class="d-flex align-items-start gap-2 mb-2" *ngFor="let obj of parsedObjectivesList">
+              <span class="material-symbols-outlined text-success fs-6 mt-1" *ngIf="obj.isCheck">check_circle</span>
+              <span class="material-symbols-outlined text-primary fs-6 mt-1" *ngIf="!obj.isCheck">task_alt</span>
+              <span class="fs-7 text-dark">{{ obj.text }}</span>
+            </div>
           </div>
         </div>
 
-        <!-- Action buttons -->
-        <div class="mt-auto border-top pt-3 d-flex gap-2">
-          <button *ngIf="course.status === 'Non commencé'" 
-                  (click)="enroll(course)" 
-                  class="fluent-btn-primary w-100 justify-content-center">
-            <span class="material-symbols-outlined">school</span>
-            S'inscrire
-          </button>
+        <!-- Programme / Syllabus Timeline -->
+        <div>
+          <h5 class="fw-bold fs-7 mb-3 text-uppercase text-secondary tracking-wider">Programme détaillé</h5>
           
-          <button *ngIf="course.status === 'En cours'" 
-                  (click)="study(course)" 
-                  class="fluent-btn-primary w-100 justify-content-center">
-            <span class="material-symbols-outlined">menu_book</span>
-            Continuer
-          </button>
-          
-          <button *ngIf="course.status === 'Terminé'" 
-                  (click)="downloadCertificate(course.name)" 
-                  class="fluent-btn-primary w-100 justify-content-center bg-success">
-            <span class="material-symbols-outlined text-white">workspace_premium</span>
-            Certificat
-          </button>
+          <div *ngIf="parsedSyllabusSections.length === 0" class="alert alert-light text-center border text-muted fs-7">
+            <span class="material-symbols-outlined fs-4 d-block mb-1 text-secondary">info</span>
+            Aucun programme détaillé disponible pour cette formation.
+          </div>
+
+          <div class="syllabus-sections" *ngIf="parsedSyllabusSections.length > 0">
+            <div class="syllabus-section-card mb-3 border rounded overflow-hidden" *ngFor="let sec of parsedSyllabusSections; let i = index">
+              <div class="section-header bg-light px-3 py-2 border-bottom d-flex align-items-center gap-2">
+                <span class="badge bg-primary rounded-circle" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">{{ i + 1 }}</span>
+                <span class="fw-bold fs-7 text-dark">{{ sec.title }}</span>
+              </div>
+              <div class="section-body p-3">
+                <div class="syllabus-item d-flex align-items-start gap-2 mb-2" *ngFor="let item of sec.items">
+                  <span class="badge bg-secondary-subtle text-secondary border font-monospace me-1" *ngIf="item.number">{{ item.number }}</span>
+                  <span class="bullet-dot bg-primary mt-2 me-1" *ngIf="!item.number"></span>
+                  <span class="fs-7 text-dark flex-grow-1">{{ item.text }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer pt-3 border-top d-flex justify-content-between align-items-center">
+        <div class="text-muted fs-8">
+          {{ parsedSyllabusSections.length }} module(s) au programme
+        </div>
+        <button (click)="closeProgramModal()" class="fluent-btn-secondary px-4">Fermer</button>
       </div>
     </div>
   </div>
-</div>
+
+  <app-certificate
+    *ngIf="showCertificateModal && selectedCertificateEnrollment"
+    [employeeName]="currentUserEmployeeName"
+    [trainingTitle]="selectedCertificateEnrollment.training.title"
+    [duration]="selectedCertificateEnrollment.training.duration"
+    [trainer]="selectedCertificateEnrollment.training.trainer"
+    [startDate]="selectedCertificateEnrollment.training.startDate"
+    [endDate]="selectedCertificateEnrollment.training.endDate"
+    [level]="selectedCertificateEnrollment.training.level"
+    [completionDate]="selectedCertificateEnrollment.enrollmentDate"
+    (close)="closeCertificateModal()">
+  </app-certificate>
+

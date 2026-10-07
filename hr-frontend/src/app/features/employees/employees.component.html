@@ -30,18 +30,16 @@
       <div class="col-md-3 col-lg-3">
         <select class="fluent-input" [(ngModel)]="selectedDepartment" (ngModelChange)="applyFilters()">
           <option value="">Tous les départements</option>
-          <option value="IT">IT</option>
-          <option value="RH">RH</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Finance">Finance</option>
+          <option *ngFor="let dept of departmentsList" [value]="dept.name">{{ dept.name }}</option>
         </select>
       </div>
       <div class="col-md-3 col-lg-3">
+        <!-- Valeurs alignées sur le backend : ACTIVE / INACTIVE, et ON_LEAVE (calculé) -->
         <select class="fluent-input" [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
           <option value="">Tous les statuts</option>
-          <option value="Actif">Actif</option>
-          <option value="Congé">Congé</option>
-          <option value="Suspendu">Suspendu</option>
+          <option value="ACTIVE">Actif (présent)</option>
+          <option value="ON_LEAVE">En congé</option>
+          <option value="INACTIVE">Inactif</option>
         </select>
       </div>
       <div class="col-md-12 col-lg-2 text-md-end">
@@ -77,12 +75,18 @@
               <span class="fluent-badge primary">{{ emp.department }}</span>
             </td>
             <td>{{ emp.position }}</td>
-            <td class="fw-medium">{{ emp.salary ? (emp.salary | number:'1.0-0') : '45 000' }} €</td>
+            <td class="fw-medium">{{ emp.salary ? (emp.salary | number:'1.3-3') + ' TND' : '—' }}</td>
             <td>
-              <span class="fluent-badge" 
+              <!-- En congé aujourd'hui : statut calculé par le backend -->
+              <span *ngIf="emp.onLeaveToday" class="fluent-badge warning"
+                    [title]="'De retour le ' + (emp.leaveReturnDate | date:'dd/MM/yyyy')">
+                En congé
+              </span>
+
+              <!-- Sinon : statut enregistré de l'employé -->
+              <span *ngIf="!emp.onLeaveToday" class="fluent-badge" 
                     [ngClass]="{
                       'success': emp.status === 'ACTIVE' || emp.status === 'Actif',
-                      'warning': emp.status === 'Congé',
                       'error': emp.status === 'INACTIVE' || emp.status === 'Suspendu'
                     }">
                 {{ emp.status === 'ACTIVE' ? 'Actif' : emp.status === 'INACTIVE' ? 'Inactif' : emp.status }}
@@ -122,7 +126,8 @@
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
-      <form (ngSubmit)="saveEmployee()" class="modal-body">
+
+      <form [formGroup]="employeeForm" (ngSubmit)="saveEmployee()" class="modal-body">
         <div class="row g-3">
           <div class="col-12 text-center mb-2">
             <div class="avatar-upload-container" (click)="fileInput.click()">
@@ -141,60 +146,194 @@
             </div>
             
             <!-- Error messages -->
-            <div *ngIf="uploadError" class="text-danger fs-7 mt-1 fw-semibold">
+            <div *ngIf="uploadError" class="alert alert-danger py-2 px-3 fs-7 mt-2 mb-0 rounded fw-semibold">
               {{ uploadError }}
             </div>
           </div>
 
+          <!-- Prénom -->
           <div class="col-md-6">
-            <label class="form-label fs-7 fw-semibold">Prénom</label>
-            <input type="text" class="fluent-input" [(ngModel)]="currentFormEmployee.firstName" name="firstName" required>
+            <label class="form-label fs-7 fw-semibold">Prénom <span class="text-danger">*</span></label>
+            <input 
+              type="text" 
+              class="fluent-input" 
+              formControlName="firstName" 
+              placeholder="Ahmed"
+              (keypress)="onNameKeyPress($event)"
+              [ngClass]="{'is-invalid': f['firstName'].invalid && (f['firstName'].dirty || f['firstName'].touched)}">
+            <div *ngIf="f['firstName'].invalid && (f['firstName'].dirty || f['firstName'].touched)" class="invalid-feedback-custom">
+              <span *ngIf="f['firstName'].errors?.['required']">Le prénom est obligatoire.</span>
+              <span *ngIf="f['firstName'].errors?.['pattern']">Doit commencer par une majuscule et ne contenir que des lettres.</span>
+            </div>
           </div>
+
+          <!-- Nom -->
           <div class="col-md-6">
-            <label class="form-label fs-7 fw-semibold">Nom</label>
-            <input type="text" class="fluent-input" [(ngModel)]="currentFormEmployee.lastName" name="lastName" required>
+            <label class="form-label fs-7 fw-semibold">Nom <span class="text-danger">*</span></label>
+            <input 
+              type="text" 
+              class="fluent-input" 
+              formControlName="lastName" 
+              placeholder="Ben Ali"
+              (keypress)="onNameKeyPress($event)"
+              [ngClass]="{'is-invalid': f['lastName'].invalid && (f['lastName'].dirty || f['lastName'].touched)}">
+            <div *ngIf="f['lastName'].invalid && (f['lastName'].dirty || f['lastName'].touched)" class="invalid-feedback-custom">
+              <span *ngIf="f['lastName'].errors?.['required']">Le nom est obligatoire.</span>
+              <span *ngIf="f['lastName'].errors?.['pattern']">Doit commencer par une majuscule et ne contenir que des lettres.</span>
+            </div>
           </div>
+
+          <!-- Email -->
           <div class="col-md-6">
-            <label class="form-label fs-7 fw-semibold">Adresse Email</label>
-            <input type="email" class="fluent-input" [(ngModel)]="currentFormEmployee.email" name="email" required>
+            <label class="form-label fs-7 fw-semibold">Adresse Email <span class="text-danger">*</span></label>
+            <input 
+              type="email" 
+              class="fluent-input" 
+              formControlName="email" 
+              placeholder="ahmed@corp.com"
+              [ngClass]="{'is-invalid': f['email'].invalid && (f['email'].dirty || f['email'].touched)}">
+            <div *ngIf="f['email'].invalid && (f['email'].dirty || f['email'].touched)" class="invalid-feedback-custom">
+              <span *ngIf="f['email'].errors?.['required']">L'adresse email est obligatoire.</span>
+              <span *ngIf="f['email'].errors?.['email']">Adresse email invalide (ex: nom@domaine.com).</span>
+            </div>
           </div>
+
+          <!-- Téléphone avec préfixe Tunisie +216 et drapeau -->
           <div class="col-md-6">
-            <label class="form-label fs-7 fw-semibold">Téléphone</label>
-            <input type="text" class="fluent-input" [(ngModel)]="currentFormEmployee.phone" name="phone">
+            <label class="form-label fs-7 fw-semibold">Téléphone <span class="text-danger">*</span></label>
+            <div class="phone-input-wrapper" [ngClass]="{'is-invalid-wrapper': f['phone'].invalid && (f['phone'].dirty || f['phone'].touched)}">
+              <div class="phone-prefix-container">
+                <svg class="tunisia-flag-svg" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="1200" height="800" fill="#e70013"/>
+                  <circle cx="600" cy="400" r="200" fill="#fff"/>
+                  <circle cx="600" cy="400" r="150" fill="#e70013"/>
+                  <circle cx="640" cy="400" r="120" fill="#fff"/>
+                  <polygon points="610,310 635,370 700,370 648,405 668,468 610,430 552,468 572,405 520,370 585,370" fill="#e70013"/>
+                </svg>
+                <span class="prefix-code">+216</span>
+              </div>
+              <input 
+                type="text" 
+                class="fluent-input phone-input-field" 
+                formControlName="phone" 
+                placeholder="22123456"
+                maxlength="8"
+                (keypress)="onPhoneKeyPress($event)"
+                [ngClass]="{'is-invalid': f['phone'].invalid && (f['phone'].dirty || f['phone'].touched)}">
+            </div>
+
+            <!-- Operator Badge -->
+            <div *ngIf="getTunisianOperator(f['phone'].value) as op" class="operator-badge mt-1" [ngClass]="op.class">
+              <span class="material-symbols-outlined fs-7 me-1">{{ op.icon }}</span>
+              <span>{{ op.name }}</span>
+            </div>
+
+            <!-- Phone Errors -->
+            <div *ngIf="f['phone'].invalid && (f['phone'].dirty || f['phone'].touched)" class="invalid-feedback-custom">
+              <span *ngIf="f['phone'].errors?.['required']">Le numéro de téléphone est obligatoire.</span>
+              <span *ngIf="f['phone'].errors?.['nonNumeric']">Le numéro ne doit contenir que des chiffres.</span>
+              <span *ngIf="f['phone'].errors?.['invalidLength']">Le numéro doit contenir exactement 8 chiffres.</span>
+              <span *ngIf="f['phone'].errors?.['invalidPrefix']">Préfixe d'opérateur tunisien invalide (Ooredoo: 2x | TT: 9x | Orange: 5x).</span>
+            </div>
           </div>
+
+          <!-- Département -->
           <div class="col-md-6">
-            <label class="form-label fs-7 fw-semibold">Département</label>
-            <select class="fluent-input" [(ngModel)]="currentFormEmployee.department" name="department" required>
-              <option value="IT">IT</option>
-              <option value="RH">RH</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Finance">Finance</option>
+            <label class="form-label fs-7 fw-semibold">Département <span class="text-danger">*</span></label>
+            <select 
+              class="fluent-input" 
+              formControlName="department"
+              [ngClass]="{'is-invalid': f['department'].invalid && (f['department'].dirty || f['department'].touched)}">
+              <option *ngFor="let dept of departmentsList" [value]="dept.name">{{ dept.name }}</option>
             </select>
+            <div *ngIf="f['department'].invalid && (f['department'].dirty || f['department'].touched)" class="invalid-feedback-custom">
+              <span>Le département est obligatoire.</span>
+            </div>
           </div>
+
+          <!-- Poste -->
           <div class="col-md-6">
-            <label class="form-label fs-7 fw-semibold">Poste</label>
-            <input type="text" class="fluent-input" [(ngModel)]="currentFormEmployee.position" name="position" required>
+            <label class="form-label fs-7 fw-semibold">Poste <span class="text-danger">*</span></label>
+            <input 
+              type="text" 
+              class="fluent-input" 
+              formControlName="position" 
+              placeholder="Développeur Fullstack"
+              (keypress)="onNameKeyPress($event)"
+              [ngClass]="{'is-invalid': f['position'].invalid && (f['position'].dirty || f['position'].touched)}">
+            <div *ngIf="f['position'].invalid && (f['position'].dirty || f['position'].touched)" class="invalid-feedback-custom">
+              <span *ngIf="f['position'].errors?.['required']">Le poste est obligatoire.</span>
+              <span *ngIf="f['position'].errors?.['pattern']">Le poste ne doit contenir que des lettres et espaces.</span>
+            </div>
           </div>
+
+          <!-- Date d'embauche -->
           <div class="col-md-6">
-            <label class="form-label fs-7 fw-semibold">Date d'embauche</label>
-            <input type="date" class="fluent-input" [(ngModel)]="currentFormEmployee.hireDate" name="hireDate" required>
+            <label class="form-label fs-7 fw-semibold">Date d'embauche <span class="text-danger">*</span></label>
+            <input 
+              type="date" 
+              class="fluent-input" 
+              formControlName="hireDate"
+              [ngClass]="{'is-invalid': f['hireDate'].invalid && (f['hireDate'].dirty || f['hireDate'].touched)}">
+            <div *ngIf="f['hireDate'].invalid && (f['hireDate'].dirty || f['hireDate'].touched)" class="invalid-feedback-custom">
+              <span *ngIf="f['hireDate'].errors?.['required']">La date d'embauche est obligatoire.</span>
+              <span *ngIf="f['hireDate'].errors?.['futureDate']">La date d'embauche ne peut pas être dans le futur.</span>
+            </div>
           </div>
+
+          <!-- Statut -->
           <div class="col-md-6">
-            <label class="form-label fs-7 fw-semibold">Statut</label>
-            <select class="fluent-input" [(ngModel)]="currentFormEmployee.status" name="status" required>
+            <label class="form-label fs-7 fw-semibold">Statut <span class="text-danger">*</span></label>
+            <select 
+              class="fluent-input" 
+              formControlName="status"
+              [ngClass]="{'is-invalid': f['status'].invalid && (f['status'].dirty || f['status'].touched)}">
               <option value="ACTIVE">Actif</option>
               <option value="INACTIVE">Inactif</option>
             </select>
+            <div class="fs-8 text-muted mt-1">« En congé » est calculé automatiquement à partir des congés approuvés.</div>
+            <div *ngIf="f['status'].invalid && (f['status'].dirty || f['status'].touched)" class="invalid-feedback-custom">
+              <span>Le statut est obligatoire.</span>
+            </div>
           </div>
+
+          <!-- Salaire Annuel (TND) -->
           <div class="col-md-6">
-            <label class="form-label fs-7 fw-semibold">Salaire Annuel (€)</label>
-            <input type="number" class="fluent-input" [(ngModel)]="currentFormEmployee.salary" name="salary" required>
+            <label class="form-label fs-7 fw-semibold">Salaire Annuel (TND) <span class="text-danger">*</span></label>
+            <input 
+              type="number" 
+              step="0.001" 
+              min="0.001" 
+              class="fluent-input" 
+              formControlName="salary" 
+              placeholder="45000"
+              (keypress)="onSalaryKeyPress($event)"
+              [ngClass]="{'is-invalid': f['salary'].invalid && (f['salary'].dirty || f['salary'].touched)}">
+            <div *ngIf="f['salary'].invalid && (f['salary'].dirty || f['salary'].touched)" class="invalid-feedback-custom">
+              <span *ngIf="f['salary'].errors?.['required']">Le salaire annuel est obligatoire.</span>
+              <span *ngIf="f['salary'].errors?.['min']">Le salaire annuel doit être strictement positif.</span>
+            </div>
+          </div>
+
+          <!-- Manager direct -->
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold">Manager direct</label>
+            <select class="fluent-input" formControlName="managerId" id="employee-form-manager">
+              <option [ngValue]="null">— Aucun manager —</option>
+              <option *ngFor="let mgr of managersList" [ngValue]="mgr.id"
+                      [disabled]="mgr.id === currentFormEmployee.id">
+                {{ mgr.firstName }} {{ mgr.lastName }}
+                <ng-container *ngIf="mgr.position"> — {{ mgr.position }}</ng-container>
+              </option>
+            </select>
           </div>
         </div>
         
         <div class="modal-footer mt-4 pt-3 d-flex justify-content-end gap-2">
           <button type="button" (click)="closeFormModal()" class="fluent-btn-secondary">Annuler</button>
-          <button type="submit" class="fluent-btn-primary">Sauvegarder</button>
+          <button type="submit" class="fluent-btn-primary" [disabled]="employeeForm.invalid || isUploading">
+            Sauvegarder
+          </button>
         </div>
       </form>
     </div>
@@ -212,10 +351,14 @@
       <div class="detail-body text-center mt-4" *ngIf="selectedEmployee">
         <img [src]="getEmployeePhoto(selectedEmployee)" alt="Photo" class="detail-photo mb-3">
         <h4 class="fw-bold mb-1">{{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</h4>
-        <span class="fluent-badge mb-4" 
+
+        <!-- Statut : en congé (calculé) ou statut enregistré -->
+        <span *ngIf="selectedEmployee.onLeaveToday" class="fluent-badge warning mb-4">
+          En congé · de retour le {{ selectedEmployee.leaveReturnDate | date:'dd/MM/yyyy' }}
+        </span>
+        <span *ngIf="!selectedEmployee.onLeaveToday" class="fluent-badge mb-4" 
               [ngClass]="{
                 'success': selectedEmployee.status === 'ACTIVE' || selectedEmployee.status === 'Actif',
-                'warning': selectedEmployee.status === 'Congé',
                 'error': selectedEmployee.status === 'INACTIVE' || selectedEmployee.status === 'Suspendu'
               }">
           {{ selectedEmployee.status === 'ACTIVE' ? 'Actif' : selectedEmployee.status === 'INACTIVE' ? 'Inactif' : selectedEmployee.status }}
@@ -236,11 +379,26 @@
           </div>
           <div class="detail-info-item">
             <span class="info-label text-muted fs-7">Salaire Annuel</span>
-            <span class="info-value fw-semibold text-primary">{{ selectedEmployee.salary | number:'1.0-0' }} €</span>
+            <span class="info-value fw-semibold text-primary">{{ selectedEmployee.salary | number:'1.3-3' }} TND</span>
           </div>
           <div class="detail-info-item">
             <span class="info-label text-muted fs-7">Date d'embauche</span>
             <span class="info-value fw-medium">{{ selectedEmployee.hireDate }}</span>
+          </div>
+          <div class="detail-info-item" *ngIf="selectedEmployee.availableLeaveDays !== undefined && selectedEmployee.availableLeaveDays !== null">
+            <span class="info-label text-muted fs-7">Solde de congés</span>
+            <span class="info-value fw-medium">{{ selectedEmployee.availableLeaveDays }} jour(s)</span>
+          </div>
+          <div class="detail-info-item" *ngIf="selectedEmployee.managerName">
+            <span class="info-label text-muted fs-7">Manager direct</span>
+            <span class="info-value fw-medium d-flex align-items-center gap-1">
+              <span class="material-symbols-outlined" style="font-size:0.95rem;color:#6366f1">manage_accounts</span>
+              {{ selectedEmployee.managerName }}
+            </span>
+          </div>
+          <div class="detail-info-item" *ngIf="!selectedEmployee.managerName">
+            <span class="info-label text-muted fs-7">Manager direct</span>
+            <span class="info-value text-muted">Non affecté</span>
           </div>
         </div>
         

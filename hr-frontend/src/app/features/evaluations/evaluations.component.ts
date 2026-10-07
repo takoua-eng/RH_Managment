@@ -1,63 +1,45 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+
+import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgApexchartsModule, ChartComponent } from 'ng-apexcharts';
+import { Subscription } from 'rxjs';
+import { EvaluationService } from '../../core/services/evaluation.service';
+import { AuthService, UserSession } from '../../core/services/auth.service';
 import { EmployeeService } from '../../core/services/employee.service';
 import { Employee, Evaluation } from '../../core/models/interfaces';
+import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-evaluations',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgApexchartsModule],
+  imports: [CommonModule, FormsModule, NgApexchartsModule, MatSnackBarModule],
   templateUrl: './evaluations.component.html',
   styleUrl: './evaluations.component.scss'
 })
-export class EvaluationsComponent implements OnInit {
+export class EvaluationsComponent implements OnInit, OnDestroy {
   @ViewChild('chart') chart!: ChartComponent;
 
+  userSession: UserSession | null = null;
+  private authSub!: Subscription;
+  private empSub!: Subscription;
+
+  isManager = false;
+  isEmployeeOnly = false;
+  currentEmployeeId: number | null = null;
+
   employees: Employee[] = [];
-  selectedEmployeeId = 1;
+  selectedEmployeeId: number | null = null;
   activeEmployee: Employee | null = null;
 
-  evaluations: Evaluation[] = [
-    {
-      id: 1,
-      employeeName: 'Ahmed Alami',
-      date: '2026-05-10',
-      communication: 9,
-      leadership: 7,
-      technical: 10,
-      teamwork: 9,
-      productivity: 9,
-      comments: 'Ahmed est un élément technique incontournable. Très rigoureux, il doit juste continuer à travailler sur la communication transverse en dehors de l\'équipe technique.'
-    },
-    {
-      id: 2,
-      employeeName: 'Sara Benjelloun',
-      date: '2026-05-15',
-      communication: 9,
-      leadership: 6,
-      technical: 9,
-      teamwork: 10,
-      productivity: 9,
-      comments: 'Excellente intégration de Sara. Son autonomie sur Angular et son attitude collaborative ont grandement fluidifié les projets récents.'
-    },
-    {
-      id: 3,
-      employeeName: 'Marc Dubois',
-      date: '2026-03-22',
-      communication: 10,
-      leadership: 10,
-      technical: 7,
-      teamwork: 9,
-      productivity: 8,
-      comments: 'Marc fait preuve d\'un excellent leadership et pilote avec brio les ressources humaines.'
-    }
-  ];
-
+  evaluations: Evaluation[] = [];
   employeeHistory: Evaluation[] = [];
+  
   radarChartOptions: any = null;
   showModal = false;
+  loading = true;
+  actionInProgress = false;
+  errorMessage = '';
 
   criterias = [
     { key: 'communication', label: 'Communication' },
@@ -77,38 +59,108 @@ export class EvaluationsComponent implements OnInit {
     comments: ''
   };
 
-  constructor(private employeeService: EmployeeService) {}
+  constructor(
+    private evaluationService: EvaluationService,
+    private authService: AuthService,
+    private employeeService: EmployeeService,
+    private snackBar: MatSnackBar
+  ) {}
 
   ngOnInit(): void {
-    // Load from local storage if existing
-    const saved = localStorage.getItem('hr_evaluations');
-    if (saved) {
-      this.evaluations = JSON.parse(saved);
-    } else {
-      localStorage.setItem('hr_evaluations', JSON.stringify(this.evaluations));
-    }
+    this.authSub = this.authService.currentUser$.subscribe(session => {
+      this.userSession = session;
+      if (session) {
+        this.isManager = session.role === 'Manager' || session.role === 'Administrateur';
+        this.isEmployeeOnly = session.role === 'Employé';
+        this.currentEmployeeId = session.id || null;
 
-    this.employeeService.employees$.subscribe(data => {
-      this.employees = data;
-      if (this.employees.length > 0) {
-        // Match default employee selection
-        const first = this.employees[0];
-        this.selectedEmployeeId = first.id;
+        if (this.isManager) {
+          this.loadEmployees();
+        } else if (this.isEmployeeOnly && this.currentEmployeeId) {
+          this.loadEmployeeEvaluations(this.currentEmployeeId);
+        } else {
+           this.loading = false;
+        }
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.authSub) this.authSub.unsubscribe();
+    if (this.empSub) this.empSub.unsubscribe();
+  }
+
+  loadEmployees(): void {
+    if (this.currentEmployeeId) {
+      this.empSub = this.employeeService.getManagerTeam(this.currentEmployeeId).subscribe({
+        next: (data) => {
+          this.employees = data || [];
+          if (this.employees.length > 0) {
+             if (!this.selectedEmployeeId) {
+                this.selectedEmployeeId = this.employees[0].id;
+             }
+          }
+          this.loadManagerEvaluations(this.currentEmployeeId!);
+        },
+        error: (err) => {
+          console.error('Erreur chargement équipe', err);
+          this.errorMessage = 'Erreur lors du chargement de l\'équipe.';
+          this.loading = false;
+        }
+      });
+    } else {
+       this.loading = false;
+    }
+  }
+
+  loadManagerEvaluations(managerId: number) {
+    this.loading = true;
+    this.errorMessage = '';
+    this.evaluationService.getManagerEvaluations(managerId).subscribe({
+      next: (data) => {
+        this.evaluations = data;
         this.onEmployeeChange();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement évaluations', err);
+        this.errorMessage = 'Erreur lors du chargement des évaluations.';
+        this.loading = false;
+      }
+    });
+  }
+
+  loadEmployeeEvaluations(employeeId: number) {
+    this.loading = true;
+    this.errorMessage = '';
+    this.evaluationService.getEmployeeEvaluations(employeeId).subscribe({
+      next: (data) => {
+        this.evaluations = data;
+        this.employeeHistory = data;
+        this.initRadarChart();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement évaluations', err);
+        this.errorMessage = 'Erreur lors du chargement de vos évaluations.';
+        this.loading = false;
       }
     });
   }
 
   onEmployeeChange() {
-    this.activeEmployee = this.employees.find(e => e.id === Number(this.selectedEmployeeId)) || null;
-    this.applyHistoryFilter();
-    this.initRadarChart();
+    if (this.isManager && this.selectedEmployeeId) {
+      this.activeEmployee = this.employees.find(e => e.id === Number(this.selectedEmployeeId)) || null;
+      this.applyHistoryFilter();
+      this.initRadarChart();
+    }
   }
 
   applyHistoryFilter() {
     if (this.activeEmployee) {
-      const name = `${this.activeEmployee.firstName} ${this.activeEmployee.name}`;
-      this.employeeHistory = this.evaluations.filter(e => e.employeeName.toLowerCase().includes(this.activeEmployee!.name.toLowerCase()));
+      // Filter by ID
+      this.employeeHistory = this.evaluations.filter(e => e.employeeId === this.activeEmployee!.id)
+                                             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } else {
       this.employeeHistory = [];
     }
@@ -128,7 +180,9 @@ export class EvaluationsComponent implements OnInit {
 
   openEvaluationModal() {
     this.newEval = {
-      employeeName: this.activeEmployee ? `${this.activeEmployee.firstName} ${this.activeEmployee.name}` : '',
+      employeeId: this.activeEmployee?.id,
+      employeeName: this.activeEmployee ? `${this.activeEmployee.firstName} ${this.activeEmployee.lastName || this.activeEmployee.name}` : '',
+      managerId: this.currentEmployeeId || undefined,
       communication: 8,
       leadership: 6,
       technical: 8,
@@ -140,28 +194,32 @@ export class EvaluationsComponent implements OnInit {
   }
 
   submitEvaluation() {
-    const nextId = this.evaluations.length > 0 ? Math.max(...this.evaluations.map(e => e.id)) + 1 : 1;
-    const finalEval: Evaluation = {
-      id: nextId,
-      employeeName: this.newEval.employeeName || '',
-      date: new Date().toISOString().split('T')[0],
-      communication: this.newEval.communication || 5,
-      leadership: this.newEval.leadership || 5,
-      technical: this.newEval.technical || 5,
-      teamwork: this.newEval.teamwork || 5,
-      productivity: this.newEval.productivity || 5,
-      comments: this.newEval.comments || ''
+    this.actionInProgress = true;
+    
+    // Add date for payload
+    const payload = {
+      ...this.newEval,
+      date: new Date().toISOString().split('T')[0]
     };
 
-    this.evaluations.push(finalEval);
-    localStorage.setItem('hr_evaluations', JSON.stringify(this.evaluations));
-    this.showModal = false;
-    this.onEmployeeChange();
+    this.evaluationService.createEvaluation(payload).subscribe({
+      next: (res) => {
+        this.snackBar.open('Évaluation enregistrée avec succès', 'Fermer', { duration: 3000 });
+        this.evaluations.push(res);
+        this.showModal = false;
+        this.actionInProgress = false;
+        this.onEmployeeChange();
+      },
+      error: (err) => {
+        this.snackBar.open('Erreur lors de l\'enregistrement', 'Fermer', { duration: 3000 });
+        console.error(err);
+        this.actionInProgress = false;
+      }
+    });
   }
 
   private initRadarChart() {
-    // If there is an evaluation for the active employee, use it. Else use defaults.
-    let comm = 7, lead = 5, tech = 7, team = 7, prod = 7;
+    let comm = 0, lead = 0, tech = 0, team = 0, prod = 0;
     
     if (this.employeeHistory.length > 0) {
       const latest = this.employeeHistory[0];
@@ -172,10 +230,18 @@ export class EvaluationsComponent implements OnInit {
       prod = latest.productivity;
     }
 
+    if (this.employeeHistory.length === 0 && !this.isManager) {
+        // If employee has no evals, show empty chart
+        comm = 0; lead = 0; tech = 0; team = 0; prod = 0;
+    } else if (this.employeeHistory.length === 0 && this.isManager) {
+        // Defaults for UI when no eval
+        comm = 7; lead = 5; tech = 7; team = 7; prod = 7;
+    }
+
     this.radarChartOptions = {
       series: [
         {
-          name: "Compétences",
+          name: "Dernière évaluation",
           data: [comm, lead, tech, team, prod]
         }
       ],
@@ -183,21 +249,13 @@ export class EvaluationsComponent implements OnInit {
         height: 280,
         type: "radar",
         fontFamily: "'Segoe UI', 'Inter', sans-serif",
-        toolbar: {
-          show: false
-        },
+        toolbar: { show: false },
         background: 'transparent'
       },
       colors: ["#2563EB"],
-      stroke: {
-        width: 2
-      },
-      fill: {
-        opacity: 0.2
-      },
-      markers: {
-        size: 4
-      },
+      stroke: { width: 2 },
+      fill: { opacity: 0.2 },
+      markers: { size: 4 },
       xaxis: {
         categories: ["Communication", "Leadership", "Technique", "Travail équipe", "Productivité"],
         labels: {
@@ -207,9 +265,9 @@ export class EvaluationsComponent implements OnInit {
           }
         }
       },
-      grid: {
-        borderColor: "rgba(128, 128, 128, 0.15)"
-      }
+      yaxis: { min: 0, max: 10, tickAmount: 5 },
+      grid: { borderColor: "rgba(128, 128, 128, 0.15)" }
     };
   }
 }
+

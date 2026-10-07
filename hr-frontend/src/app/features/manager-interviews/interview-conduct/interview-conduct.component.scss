@@ -1,0 +1,72 @@
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.avatar-circle {
+  flex-shrink: 0;
+}
+
+.custom-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+}
+
+.rotate {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.option-card {
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+}
+
+.star-icon {
+  user-select: none;
+  transition: transform 0.15s ease;
+
+  &:hover {
+    transform: scale(1.2);
+  }
+}
+
+.print-only {
+  display: none !important;
+}
+
+@media print {
+  .no-print, header, nav, aside, .manager-sidebar, .manager-navbar, .sidebar-nav, .btn, .nav-link-item, button, input[type="checkbox"] {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body, .container-fluid, .page-container {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .fluent-card {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  textarea {
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+  }
+}

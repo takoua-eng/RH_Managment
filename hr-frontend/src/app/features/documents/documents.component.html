@@ -5,7 +5,14 @@
       <h2 class="fw-bold mb-1">Documents & Modèles</h2>
       <p class="text-muted mb-0">Coffre-fort numérique de l'entreprise. Gérez les contrats, fiches de paie et attestations.</p>
     </div>
-    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+    <div class="col-md-6 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end align-items-center gap-2 flex-wrap">
+      <!-- Employee filter for Admin/RH -->
+      <div *ngIf="isAdminOrRHOrManager" class="text-start" style="min-width: 220px;">
+        <select class="fluent-input" [(ngModel)]="selectedEmployeeId" (change)="onEmployeeFilterChange()">
+          <option [value]="null">Tous les employés</option>
+          <option *ngFor="let emp of employees" [value]="emp.id">{{ emp.firstName }} {{ emp.lastName }}</option>
+        </select>
+      </div>
       <button (click)="openUploadModal()" class="fluent-btn-primary">
         <span class="material-symbols-outlined">upload_file</span>
         Ajouter un document
@@ -49,11 +56,26 @@
       <span class="fw-semibold">{{ selectedFolder ? selectedFolder + 's' : 'Tous les documents' }}</span>
       <span class="fs-8 text-muted">{{ filteredDocs.length }} affichés</span>
     </div>
-    <div class="table-responsive">
+
+    <!-- Error message -->
+    <div class="alert alert-danger m-3 d-flex align-items-center gap-2 border-0 shadow-sm" *ngIf="errorMessage">
+      <span class="material-symbols-outlined fs-5">error</span>
+      <div class="fs-7 fw-medium">{{ errorMessage }}</div>
+    </div>
+
+    <div *ngIf="loading" class="py-5 text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+      <p class="text-muted mt-2">Chargement des documents...</p>
+    </div>
+
+    <div class="table-responsive" *ngIf="!loading && !errorMessage">
       <table class="fluent-table mb-0">
         <thead>
           <tr>
             <th>Nom</th>
+            <th *ngIf="isAdminOrRHOrManager && !selectedEmployeeId">Employé</th>
             <th>Catégorie</th>
             <th>Date d'ajout</th>
             <th>Taille</th>
@@ -67,6 +89,9 @@
                 <span class="material-symbols-outlined text-danger">picture_as_pdf</span>
                 <span class="text-truncate" style="max-width: 280px;">{{ doc.name }}</span>
               </div>
+            </td>
+            <td *ngIf="isAdminOrRHOrManager && !selectedEmployeeId" class="text-muted">
+              {{ doc.employeeName }}
             </td>
             <td>
               <span class="fluent-badge primary">{{ doc.type }}</span>
@@ -88,7 +113,7 @@
             </td>
           </tr>
           <tr *ngIf="filteredDocs.length === 0">
-            <td colspan="5" class="text-center py-5 text-muted"> Aucun document dans ce dossier. </td>
+            <td [attr.colspan]="isAdminOrRHOrManager && !selectedEmployeeId ? 6 : 5" class="text-center py-5 text-muted"> Aucun document dans ce dossier. </td>
           </tr>
         </tbody>
       </table>
@@ -105,6 +130,12 @@
         </button>
       </div>
       <form (ngSubmit)="uploadDocument()" class="modal-body">
+        <div class="mb-3" *ngIf="isAdminOrRHOrManager">
+          <label class="form-label fs-7 fw-semibold">Attribuer à l'employé</label>
+          <select class="fluent-input" [(ngModel)]="uploadEmployeeId" name="employeeId" required>
+            <option *ngFor="let emp of employees" [value]="emp.id">{{ emp.firstName }} {{ emp.lastName }}</option>
+          </select>
+        </div>
         <div class="mb-3">
           <label class="form-label fs-7 fw-semibold">Nom du document</label>
           <input type="text" class="fluent-input" [(ngModel)]="uploadName" name="name" placeholder="Ex: Contrat_Jean_Dupont.pdf" required>
@@ -119,8 +150,8 @@
           </select>
         </div>
         <div class="mb-3">
-          <label class="form-label fs-7 fw-semibold">Fichier (simulé)</label>
-          <input type="file" class="fluent-input" (change)="onFileSelected($event)">
+          <label class="form-label fs-7 fw-semibold">Fichier</label>
+          <input type="file" class="fluent-input" (change)="onFileSelected($event)" required>
         </div>
         <div class="modal-footer mt-4 pt-3 d-flex justify-content-end gap-2">
           <button type="button" (click)="showUploadModal = false" class="fluent-btn-secondary">Annuler</button>
@@ -131,8 +162,8 @@
   </div>
 
   <!-- Preview Modal -->
-  <div class="fluent-modal-overlay" *ngIf="showPreviewModal" (click)="showPreviewModal = false">
-    <div class="fluent-modal-card document-preview-card" (click)="$event.stopPropagation()">
+  <div class="fluent-modal-overlay" *ngIf="showPreviewModal" (click)="closePreviewModal()">
+    <div class="fluent-modal-card document-preview-card" (click)="$event.stopPropagation()" style="max-width: 600px; width: 90%;">
       <div class="modal-header d-flex justify-content-between align-items-center">
         <h4 class="fw-bold mb-0 fs-5">Prévisualisation du document</h4>
         <div class="d-flex align-items-center gap-2 me-3">
@@ -140,14 +171,19 @@
             <span class="material-symbols-outlined fs-6">download</span>
             Télécharger
           </button>
-          <button (click)="showPreviewModal = false" class="border-0 bg-transparent text-muted cursor-pointer">
+          <button (click)="closePreviewModal()" class="border-0 bg-transparent text-muted cursor-pointer">
             <span class="material-symbols-outlined">close</span>
           </button>
         </div>
       </div>
-      <div class="modal-body bg-light-subtle overflow-y-auto" style="max-height: 500px;">
-        <!-- Premium paper mock template inside -->
-        <div class="a4-page shadow p-5 bg-white text-dark mx-auto my-3 text-start" style="max-width: 500px; font-family: Georgia, serif;">
+      <div class="modal-body bg-light-subtle overflow-y-auto" style="max-height: 600px;">
+        <!-- Real PDF Preview Frame -->
+        <div *ngIf="pdfUrl" class="w-100 shadow rounded overflow-hidden mb-3" style="height: 550px;">
+          <iframe [src]="pdfUrl" width="100%" height="100%" class="border-0"></iframe>
+        </div>
+
+        <!-- Premium paper mock template inside as fallback if no pdfUrl -->
+        <div *ngIf="!pdfUrl" class="a4-page shadow p-5 bg-white text-dark mx-auto my-3 text-start" style="max-width: 500px; font-family: Georgia, serif;">
           <div class="border-bottom pb-4 mb-4 text-center">
             <h4 class="fw-bold text-uppercase tracking-wider">CorpFlow Technologies</h4>
             <p class="text-muted fs-8 mb-0">12 Rue de la Paix, 75002 Paris | info&#64;corpflow.com</p>
@@ -165,7 +201,7 @@
             <div *ngSwitchCase="'Fiche de paie'">
               <h5 class="fw-bold text-center mb-4 text-decoration-underline">BULLETIN DE PAIE</h5>
               <p class="fs-7">Période : Mois d'activité</p>
-              <p class="fs-7 fw-semibold">Salarié : Collaborateur CorpFlow</p>
+              <p class="fs-7 fw-semibold">Salarié : {{ selectedDoc?.employeeName || 'Collaborateur CorpFlow' }}</p>
               <table class="table table-bordered table-sm fs-8 mt-4">
                 <thead>
                   <tr>
@@ -180,17 +216,17 @@
                     <td>Salaire de Base</td>
                     <td>151.67 h</td>
                     <td>25.00</td>
-                    <td>3 791.75 €</td>
+                    <td>3 791.75 TND</td>
                   </tr>
                   <tr>
                     <td>Cotisations sociales</td>
                     <td>-</td>
                     <td>-</td>
-                    <td>-842.10 €</td>
+                    <td>-842.10 TND</td>
                   </tr>
                   <tr class="table-active fw-bold">
                     <td colspan="3">Net à payer</td>
-                    <td>2 949.65 €</td>
+                    <td>2 949.65 TND</td>
                   </tr>
                 </tbody>
               </table>

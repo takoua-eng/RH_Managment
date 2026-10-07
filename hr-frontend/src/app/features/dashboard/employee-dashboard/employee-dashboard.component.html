@@ -1,0 +1,218 @@
+<div class="emp-dash py-4">
+
+  <!-- Chargement -->
+  <div *ngIf="loading" class="state">
+    <span class="spinner"></span> Chargement de votre espace…
+  </div>
+
+  <!-- Erreur -->
+  <div *ngIf="!loading && error" class="state state-error">
+    {{ error }}
+    <button type="button" class="btn-soft" (click)="load()">Réessayer</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !error && data as d">
+
+    <!-- ================= Bandeau de bienvenue ================= -->
+    <section class="hero">
+      <img *ngIf="photo; else initialsAvatar" [src]="photo" alt="" class="avatar avatar-img">
+      <ng-template #initialsAvatar>
+        <div class="avatar">{{ initials(d.profile?.firstName, d.profile?.lastName) }}</div>
+      </ng-template>
+
+      <div class="hero-text">
+        <p class="hero-date">{{ today | date:'EEEE d MMMM y':'':'fr' }}</p>
+        <h1>Bonjour, {{ d.profile?.firstName }} !</h1>
+        <p class="hero-meta">
+          <span *ngIf="d.profile?.position">{{ d.profile?.position }}</span>
+          <span *ngIf="d.profile?.departmentName"> · {{ d.profile?.departmentName }}</span>
+        </p>
+      </div>
+
+      <div class="hero-status" *ngIf="d.leaveStatus as ls">
+        <ng-container *ngIf="ls.onLeaveToday; else notOnLeave">
+          🌴 Vous êtes en congé jusqu'au <b>{{ ls.currentLeaveEnd | date:'d MMMM':'':'fr' }}</b>
+        </ng-container>
+        <ng-template #notOnLeave>
+          <ng-container *ngIf="ls.nextApprovedLeave as next; else noLeave">
+            📅 Prochain congé le <b>{{ next.startDate | date:'d MMMM':'':'fr' }}</b>
+            <span class="muted">
+              ({{ ls.daysUntilNextLeave === 1 ? 'demain' : 'dans ' + ls.daysUntilNextLeave + ' jours' }})
+            </span>
+          </ng-container>
+        </ng-template>
+        <ng-template #noLeave>Aucun congé planifié pour le moment.</ng-template>
+      </div>
+    </section>
+
+    <!-- ================= Indicateurs ================= -->
+    <section class="kpis">
+      <div class="kpi kpi-primary">
+        <span class="kpi-label">Congés restants</span>
+        <span class="kpi-value">{{ d.profile?.availableLeaveDays ?? '—' }} <small>jours</small></span>
+        <span class="kpi-sub">{{ d.leaveStatus?.daysTakenThisYear ?? 0 }} jour(s) pris cette année</span>
+      </div>
+      <div class="kpi" [class.kpi-warn]="(d.leaveStatus?.pendingRequests ?? 0) > 0">
+        <span class="kpi-label">Demandes en attente</span>
+        <span class="kpi-value">{{ d.leaveStatus?.pendingRequests ?? 0 }}</span>
+        <span class="kpi-sub">En attente de votre manager</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Formations en cours</span>
+        <span class="kpi-value">{{ d.trainings.inProgress.length }}</span>
+        <span class="kpi-sub">{{ d.trainings.completedCount }} terminée(s)</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Ancienneté</span>
+        <span class="kpi-value kpi-value-sm">{{ d.profile?.seniorityText || '—' }}</span>
+        <span class="kpi-sub" *ngIf="d.profile?.hireDate">Depuis le {{ d.profile?.hireDate | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <!-- ================= Colonne principale ================= -->
+      <div class="main-col">
+
+        <!-- Actions rapides -->
+        <section class="quick">
+          <a class="quick-item" [routerLink]="routes.leaves">
+            <span class="material-symbols-outlined q-blue">event_available</span>
+            <span>
+              <b>Demander un congé</b>
+              <small>Solde : {{ d.profile?.availableLeaveDays ?? '—' }} jour(s)</small>
+            </span>
+          </a>
+          <a class="quick-item" [routerLink]="routes.trainings">
+            <span class="material-symbols-outlined q-purple">school</span>
+            <span>
+              <b>Mes formations</b>
+              <small>Catalogue et certificats</small>
+            </span>
+          </a>
+        </section>
+
+        <!-- Mes demandes de congé -->
+        <section class="panel">
+          <header class="panel-head">
+            <h2><span class="material-symbols-outlined">beach_access</span> Mes demandes de congé</h2>
+            <a class="link" [routerLink]="routes.leaves">Gérer mes congés</a>
+          </header>
+
+          <div *ngIf="d.recentLeaves.length === 0" class="empty">Vous n'avez encore fait aucune demande.</div>
+
+          <ul class="leave-list" *ngIf="d.recentLeaves.length > 0">
+            <li *ngFor="let l of d.recentLeaves; trackBy: trackById">
+              <div class="leave-main">
+                <div>
+                  <b>{{ l.startDate | date:'d MMM':'':'fr' }} → {{ l.endDate | date:'d MMM y':'':'fr' }}</b>
+                  <span class="muted"> · {{ l.daysCount }} jour{{ l.daysCount > 1 ? 's' : '' }}</span>
+                </div>
+                <div class="leave-tags">
+                  <span class="tag">{{ typeLabel(l.type) }}</span>
+                  <span class="badge" [ngClass]="statusClass(l.status)">{{ statusLabel(l.status) }}</span>
+                </div>
+              </div>
+
+              <p class="leave-reason" *ngIf="l.reason">Motif : {{ l.reason }}</p>
+
+              <p class="leave-decision refused" *ngIf="l.status === 'REJECTED'">
+                Refusé<span *ngIf="l.decidedByName"> par {{ l.decidedByName }}</span>
+                <span *ngIf="l.decidedAt"> le {{ l.decidedAt | date:'dd/MM/yyyy' }}</span>
+                <span *ngIf="l.decisionComment"> : « {{ l.decisionComment }} »</span>
+              </p>
+              <p class="leave-decision" *ngIf="l.status === 'APPROVED' && l.decidedByName">
+                Approuvé par {{ l.decidedByName }}
+              </p>
+            </li>
+          </ul>
+        </section>
+
+        <!-- Mes formations -->
+        <section class="panel">
+          <header class="panel-head">
+            <h2><span class="material-symbols-outlined">school</span> Mes formations</h2>
+            <a class="link" [routerLink]="routes.trainings">
+              Mes certificats ({{ d.trainings.completedCount }})
+            </a>
+          </header>
+
+          <div *ngIf="d.trainings.inProgress.length === 0" class="empty">
+            Aucune formation en cours. <a class="link" [routerLink]="routes.trainings">Voir le catalogue</a>
+          </div>
+
+          <div class="training" *ngFor="let t of d.trainings.inProgress; trackBy: trackByIndex">
+            <div class="training-head">
+              <b>{{ t.title }}</b>
+              <span>{{ t.progression ?? 0 }} %</span>
+            </div>
+            <div class="bar"><div class="bar-fill" [style.width.%]="t.progression ?? 0"></div></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ================= Colonne latérale ================= -->
+      <aside class="side-col">
+
+        <!-- Mon manager -->
+        <section class="panel">
+          <header class="panel-head"><h2><span class="material-symbols-outlined">supervisor_account</span> Mon manager</h2></header>
+          <div *ngIf="!d.manager" class="empty">Aucun manager assigné.</div>
+          <div class="person" *ngIf="d.manager as m">
+            <div class="avatar avatar-sm">{{ initials(m.firstName, m.lastName) }}</div>
+            <div class="person-text">
+              <b>{{ m.firstName }} {{ m.lastName }}</b>
+              <span class="muted">{{ m.position }}</span>
+            </div>
+            <a *ngIf="m.email" class="btn-soft" [href]="'mailto:' + m.email">Contacter</a>
+          </div>
+        </section>
+
+        <!-- Mon équipe -->
+        <section class="panel">
+          <header class="panel-head"><h2><span class="material-symbols-outlined">groups</span> Mon équipe cette semaine</h2></header>
+          <div *ngIf="d.teamAbsences.length === 0" class="empty">Toute l'équipe est présente ✓</div>
+          <ul class="absences" *ngIf="d.teamAbsences.length > 0">
+            <li *ngFor="let a of d.teamAbsences; trackBy: trackByIndex">
+              <span class="dot" [class.dot-today]="a.today"></span>
+              <b>{{ a.name }}</b>
+              <span class="muted" *ngIf="a.today">absent(e) jusqu'au {{ a.endDate | date:'d MMM':'':'fr' }}</span>
+              <span class="muted" *ngIf="!a.today">
+                du {{ a.startDate | date:'d MMM':'':'fr' }} au {{ a.endDate | date:'d MMM':'':'fr' }}
+              </span>
+            </li>
+          </ul>
+        </section>
+
+        <!-- Mon mois -->
+        <section class="panel">
+          <header class="panel-head"><h2><span class="material-symbols-outlined">calendar_month</span> {{ monthLabel }}</h2></header>
+          <div class="cal">
+            <span class="cal-head" *ngFor="let w of weekDays; trackBy: trackByIndex">{{ w }}</span>
+            <span *ngFor="let c of calendar; trackBy: trackByIndex" class="cal-day"
+                  [class.cal-empty]="!c.day"
+                  [class.cal-weekend]="c.isWeekend"
+                  [class.cal-approved]="c.status === 'APPROVED'"
+                  [class.cal-pending]="c.status === 'PENDING'"
+                  [class.cal-today]="c.isToday">{{ c.day }}</span>
+          </div>
+          <div class="cal-legend">
+            <span><i class="lg lg-approved"></i> Congé approuvé</span>
+            <span><i class="lg lg-pending"></i> En attente</span>
+          </div>
+        </section>
+
+        <!-- Notifications -->
+        <section class="panel">
+          <header class="panel-head"><h2><span class="material-symbols-outlined">notifications</span> Notifications récentes</h2></header>
+          <div *ngIf="d.notifications.length === 0" class="empty">Aucune notification.</div>
+          <ul class="notifs" *ngIf="d.notifications.length > 0">
+            <li *ngFor="let n of d.notifications; trackBy: trackById" [class.unread]="n.unread">
+              <p>{{ n.text }}</p>
+              <span class="muted">{{ relativeTime(n.createdAt) }}</span>
+            </li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+  </ng-container>
+</div>

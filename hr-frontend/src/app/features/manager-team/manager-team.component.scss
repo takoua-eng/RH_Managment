@@ -1,0 +1,377 @@
+.team-page {
+  max-width: 1200px;
+}
+
+// =========================================================
+// HEADER
+// =========================================================
+
+.page-header {
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--fluent-text);
+    margin: 0;
+
+    .title-icon {
+      color: #f59e0b;
+      font-size: 2rem;
+    }
+  }
+
+  .page-subtitle {
+    font-size: 0.9rem;
+    padding-left: 3rem;
+  }
+}
+
+
+// =========================================================
+// BARRE DE RECHERCHE
+// =========================================================
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 280px;
+    padding: 10px 36px 10px 40px;
+    border: 1.5px solid var(--fluent-border);
+    border-radius: 10px;
+    background: var(--fluent-surface);
+    color: var(--fluent-text);
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+
+    &:focus {
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    }
+
+    &::placeholder { color: #94a3b8; }
+  }
+
+  .clear-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+
+    &:hover { color: #64748b; }
+
+    .material-symbols-outlined { font-size: 1.1rem; }
+  }
+}
+
+
+// =========================================================
+// GRILLE DES MEMBRES
+// =========================================================
+
+.members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.member-card {
+  background: var(--fluent-surface);
+  border: 1px solid var(--fluent-border);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+
+    .card-hover-overlay {
+      opacity: 1;
+    }
+  }
+
+  .status-strip {
+    height: 4px;
+    width: 100%;
+
+    &.status-active   { background: linear-gradient(90deg, #10b981, #34d399); }
+    &.status-inactive { background: linear-gradient(90deg, #94a3b8, #cbd5e1); }
+    &.status-leave    { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  }
+}
+
+.card-avatar {
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+  padding-bottom: 12px;
+  position: relative;
+
+  .avatar-img {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .avatar-initials {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .status-badge-dot {
+    position: absolute;
+    bottom: 14px;
+    right: calc(50% - 44px);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+
+    &.status-active   { background: #10b981; }
+    &.status-inactive { background: #94a3b8; }
+    &.status-leave    { background: #f59e0b; }
+  }
+}
+
+.card-body {
+  padding: 0 16px 12px;
+  text-align: center;
+  flex: 1;
+
+  .member-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--fluent-text);
+    margin-bottom: 2px;
+  }
+
+  .member-position {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .member-meta {
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+
+    &.dept-chip {
+      background: rgba(59, 130, 246, 0.08);
+      color: #2563eb;
+    }
+
+    &.leave-chip {
+      background: rgba(16, 185, 129, 0.08);
+      color: #059669;
+    }
+  }
+}
+
+.card-footer-info {
+  padding: 10px 16px;
+  border-top: 1px solid var(--fluent-border);
+
+  .hire-date { font-size: 0.75rem; }
+
+  .status-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 2px 8px;
+
+    &.status-active {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+    }
+
+    &.status-inactive {
+      background: rgba(148, 163, 184, 0.15);
+      color: #64748b;
+    }
+
+    &.status-leave {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+    }
+  }
+}
+
+.card-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(245, 158, 11, 0.07);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #d97706;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  .material-symbols-outlined { font-size: 1.6rem; }
+}
+
+
+// =========================================================
+// ÉTAT VIDE
+// =========================================================
+
+.empty-state {
+  .empty-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .material-symbols-outlined {
+      font-size: 2.5rem;
+      color: #f59e0b;
+    }
+  }
+}
+
+.btn-amber-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border: 1.5px solid #f59e0b;
+  border-radius: 8px;
+  background: transparent;
+  color: #d97706;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(245, 158, 11, 0.08);
+  }
+}
+
+
+// =========================================================
+// PAGINATION
+// =========================================================
+
+.pagination-bar {
+  background: var(--fluent-surface);
+  border: 1px solid var(--fluent-border);
+  border-radius: 12px;
+  padding: 12px 20px;
+}
+
+.page-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--fluent-border);
+  background: var(--fluent-surface);
+  color: var(--fluent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  .material-symbols-outlined { font-size: 1.1rem; }
+
+  &:hover:not(:disabled) {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #d97706;
+  }
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.page-num-btn {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--fluent-border);
+  background: var(--fluent-surface);
+  color: var(--fluent-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0 8px;
+
+  &.active {
+    background: #f59e0b;
+    border-color: #d97706;
+    color: #fff;
+  }
+
+  &:hover:not(.active) {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #d97706;
+  }
+}
+
+.page-size-select {
+  padding: 5px 8px;
+  border: 1px solid var(--fluent-border);
+  border-radius: 6px;
+  background: var(--fluent-surface);
+  color: var(--fluent-text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  outline: none;
+
+  &:focus { border-color: #f59e0b; }
+}
+
+.pagination-info { font-size: 0.82rem; }

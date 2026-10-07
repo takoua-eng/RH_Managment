@@ -1,0 +1,33 @@
+<div class="confirm-overlay" *ngIf="options" (click)="onCancel()">
+  <div class="confirm-card" (click)="$event.stopPropagation()" [ngClass]="options.type || 'danger'">
+    
+    <div class="confirm-icon-wrapper" [ngClass]="options.type || 'danger'">
+      <span class="material-symbols-outlined confirm-icon" *ngIf="options.type === 'danger'">delete_forever</span>
+      <span class="material-symbols-outlined confirm-icon" *ngIf="options.type === 'warning'">warning</span>
+      <span class="material-symbols-outlined confirm-icon" *ngIf="options.type === 'info' || !options.type">help_outline</span>
+    </div>
+
+    <div class="confirm-content text-center">
+      <h3 class="confirm-title fw-bold mb-2">{{ options.title }}</h3>
+      <p class="confirm-message text-muted fs-7 mb-4">{{ options.message }}</p>
+
+      <div class="confirm-actions d-flex justify-content-center gap-2">
+        <button type="button" (click)="onCancel()" class="fluent-btn-secondary px-4">
+          {{ options.cancelText || 'Annuler' }}
+        </button>
+        <button 
+          type="button" 
+          (click)="onConfirm()" 
+          class="fluent-btn-action px-4"
+          [ngClass]="{
+            'btn-danger-variant': options.type === 'danger',
+            'btn-warning-variant': options.type === 'warning',
+            'btn-info-variant': options.type === 'info'
+          }">
+          {{ options.confirmText || 'Confirmer' }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

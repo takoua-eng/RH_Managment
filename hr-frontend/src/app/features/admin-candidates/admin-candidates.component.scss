@@ -1,0 +1,32 @@
+.page-container {
+  padding: 1.5rem;
+}
+
+.fluent-card {
+  border-radius: 8px;
+}
+
+.table {
+  th {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  td {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    vertical-align: middle;
+  }
+}
+
+.badge-new { background-color: #e0f2fe; color: #0284c7; }
+.badge-forwarded { background-color: #fef08a; color: #a16207; }
+.badge-interview { background-color: #f3e8ff; color: #7e22ce; }
+.badge-interview-done { background-color: #ffedd5; color: #c2410c; }
+.badge-accepted { background-color: #dcfce7; color: #15803d; }
+.badge-rejected { background-color: #fee2e2; color: #b91c1c; }

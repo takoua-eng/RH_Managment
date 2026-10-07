@@ -1,187 +1,672 @@
-<div class="dashboard-page">
-  <!-- Welcome Header -->
-  <div class="row mb-4 align-items-center">
-    <div class="col-md-8">
-      <h2 class="fw-bold mb-1">Tableau de Bord RH</h2>
-      <p class="text-muted mb-0">Vue globale des performances de l'entreprise, des recrutements et de l'analyse IA.</p>
+<div class="container-fluid px-4 py-4">
+
+  <!-- Header & Filter Toolbar -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 no-print">
+    <div>
+      <h2 class="fw-bold mb-1 text-dark">Tableau de Bord RH</h2>
+      <p class="text-muted fs-8 mb-0">Vue globale des performances de recrutement, de la gestion RH et des analyses IA.</p>
     </div>
-    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-      <a routerLink="/dashboard/recruitment" class="fluent-btn-primary">
-        <span class="material-symbols-outlined">add</span>
-        Nouveau Candidat
-      </a>
+
+    <!-- Filter Bar -->
+    <div class="d-flex align-items-center gap-3 bg-white p-2 px-3 rounded-4 shadow-sm border">
+      <!-- Period Selector -->
+      <div class="d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined fs-6 text-muted">date_range</span>
+        <select class="form-select form-select-sm border-0 bg-transparent fw-medium fs-8" [(ngModel)]="selectedMonths" (change)="onFilterChange()">
+          <option [ngValue]="3">Derniers 3 mois</option>
+          <option [ngValue]="6">Derniers 6 mois</option>
+          <option [ngValue]="12">Derniers 12 mois</option>
+        </select>
+      </div>
+
+      <div class="vr"></div>
+
+      <!-- Department Selector -->
+      <div class="d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined fs-6 text-muted">domain</span>
+        <select class="form-select form-select-sm border-0 bg-transparent fw-medium fs-8" [(ngModel)]="selectedDepartment" (change)="onFilterChange()">
+          <option value="">Tous les départements</option>
+          <option *ngFor="let d of departments" [value]="d.name">{{ d.name }}</option>
+        </select>
+      </div>
+
+      <div class="vr"></div>
+
+      <!-- Refresh Button -->
+      <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 rounded-3 fs-8" (click)="loadStats()" [disabled]="loading">
+        <span class="material-symbols-outlined fs-7" [class.rotate]="loading">refresh</span>
+        Actualiser
+      </button>
+
+      <!-- Export PDF Button -->
+      <button class="btn btn-sm btn-primary d-flex align-items-center gap-1 rounded-3 fs-8" (click)="exportPdf()">
+        <span class="material-symbols-outlined fs-7">picture_as_pdf</span>
+        Exporter PDF
+      </button>
     </div>
   </div>
 
-  <!-- KPI Summary Cards (First Row) -->
-  <div class="row g-4 mb-4">
-    <!-- KPI 1: Total Employees -->
-    <div class="col-sm-6 col-xl-3">
-      <div class="fluent-card kpi-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="kpi-title text-muted fw-medium fs-7">Employés</span>
-          <div class="kpi-icon-wrapper primary">
-            <span class="material-symbols-outlined">group</span>
-          </div>
-        </div>
-        <div class="kpi-value">{{ employeeCount }}</div>
-        <div class="kpi-footer text-success fs-8 fw-semibold mt-2">
-          <span class="material-symbols-outlined align-middle fs-6">trending_up</span>
-          +4% ce mois-ci
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI 2: Pending Leaves -->
-    <div class="col-sm-6 col-xl-3">
-      <div class="fluent-card kpi-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="kpi-title text-muted fw-medium fs-7">Congés en attente</span>
-          <div class="kpi-icon-wrapper warning">
-            <span class="material-symbols-outlined">pending_actions</span>
-          </div>
-        </div>
-        <div class="kpi-value">{{ pendingLeavesCount }}</div>
-        <div class="kpi-footer text-warning fs-8 fw-semibold mt-2">
-          <span class="material-symbols-outlined align-middle fs-6">schedule</span>
-          Requiert validation
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI 3: Active Recruitments -->
-    <div class="col-sm-6 col-xl-3">
-      <div class="fluent-card kpi-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="kpi-title text-muted fw-medium fs-7">Recrutements actifs</span>
-          <div class="kpi-icon-wrapper success">
-            <span class="material-symbols-outlined">assignment_ind</span>
-          </div>
-        </div>
-        <div class="kpi-value">{{ activeRecruitmentCount }}</div>
-        <div class="kpi-footer text-success fs-8 fw-semibold mt-2">
-          <span class="material-symbols-outlined align-middle fs-6">insights</span>
-          Score IA moyen : 92%
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI 4: Documents Total -->
-    <div class="col-sm-6 col-xl-3">
-      <div class="fluent-card kpi-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="kpi-title text-muted fw-medium fs-7">Documents archivés</span>
-          <div class="kpi-icon-wrapper info">
-            <span class="material-symbols-outlined">folder</span>
-          </div>
-        </div>
-        <div class="kpi-value">{{ documentsCount }}</div>
-        <div class="kpi-footer text-muted fs-8 mt-2">
-          Stockage utilisé : 74%
-        </div>
-      </div>
-    </div>
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-5 no-print">
+    <div class="spinner-border text-primary mb-3" role="status"></div>
+    <p class="text-muted fs-8">Chargement du tableau de bord...</p>
   </div>
 
-  <!-- Charts (Second Row) -->
-  <div class="row g-4 mb-4">
-    <!-- Recruitment Evolution Line Chart -->
-    <div class="col-lg-7">
-      <div class="fluent-card">
-        <h5 class="fw-bold mb-3 fs-6">Évolution des Recrutements</h5>
-        <div class="chart-container" style="min-height: 300px;">
-          <apx-chart
-            *ngIf="recruitmentChartOptions"
+  <!-- Error State -->
+  <div *ngIf="!loading && errorMessage" class="alert alert-danger rounded-4 p-4 my-4 no-print text-center">
+    <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+      <span class="material-symbols-outlined fs-3 text-danger">error</span>
+      <h5 class="fw-bold mb-0 text-danger">Impossible de charger les données</h5>
+    </div>
+    <p class="mb-3 fs-8">{{ errorMessage }}</p>
+    <button class="btn btn-primary btn-sm" (click)="loadStats()">
+      <span class="material-symbols-outlined fs-7 align-middle me-1">refresh</span> Réessayer
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading && stats">
+
+    <!-- 1. CARTES KPI (Responsive Row) -->
+    <div class="row g-3 mb-4">
+      
+      <!-- Employés -->
+      <div class="col-xl-3 col-md-6">
+        <div class="fluent-card bg-white p-3 rounded-4 shadow-sm border-0 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold text-uppercase">Total Employés</span>
+            <div class="icon-circle bg-primary-subtle text-primary rounded-circle p-2 d-flex align-items-center justify-content-center">
+              <span class="material-symbols-outlined fs-6">group</span>
+            </div>
+          </div>
+          <h3 class="fw-bold text-dark mb-0">{{ formatVal(stats.kpis.totalEmployees) }}</h3>
+        </div>
+      </div>
+
+      <!-- Congés en attente -->
+      <div class="col-xl-3 col-md-6">
+        <div class="fluent-card bg-white p-3 rounded-4 shadow-sm border-0 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold text-uppercase">Congés en attente</span>
+            <div class="icon-circle bg-warning-subtle text-warning rounded-circle p-2 d-flex align-items-center justify-content-center">
+              <span class="material-symbols-outlined fs-6">time_to_leave</span>
+            </div>
+          </div>
+          <h3 class="fw-bold text-dark mb-0">{{ formatVal(stats.kpis.pendingLeaves) }}</h3>
+        </div>
+      </div>
+
+      <!-- Offres actives -->
+      <div class="col-xl-3 col-md-6">
+        <div class="fluent-card bg-white p-3 rounded-4 shadow-sm border-0 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold text-uppercase">Offres actives</span>
+            <div class="icon-circle bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center">
+              <span class="material-symbols-outlined fs-6">work</span>
+            </div>
+          </div>
+          <h3 class="fw-bold text-dark mb-0">{{ formatVal(stats.kpis.activeJobOffers) }}</h3>
+        </div>
+      </div>
+
+      <!-- Candidatures ce mois -->
+      <div class="col-xl-3 col-md-6">
+        <div class="fluent-card bg-white p-3 rounded-4 shadow-sm border-0 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold text-uppercase">Candidatures ce mois</span>
+            <div class="icon-circle bg-info-subtle text-info rounded-circle p-2 d-flex align-items-center justify-content-center">
+              <span class="material-symbols-outlined fs-6">assignment_ind</span>
+            </div>
+          </div>
+          <div class="d-flex align-items-baseline justify-content-between">
+            <h3 class="fw-bold text-dark mb-0">{{ formatVal(stats.kpis.applicationsThisMonth) }}</h3>
+            <span class="badge rounded-pill fs-8" 
+                  [class.bg-success-subtle]="getApplicationsTrend().isPositive"
+                  [class.text-success]="getApplicationsTrend().isPositive"
+                  [class.bg-danger-subtle]="!getApplicationsTrend().isPositive"
+                  [class.text-danger]="!getApplicationsTrend().isPositive">
+              <span class="material-symbols-outlined fs-8 align-middle me-1">
+                {{ getApplicationsTrend().isPositive ? 'arrow_upward' : 'arrow_downward' }}
+              </span>
+              {{ getApplicationsTrend().text }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entretiens cette semaine -->
+      <div class="col-xl-3 col-md-6">
+        <div class="fluent-card bg-white p-3 rounded-4 shadow-sm border-0 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold text-uppercase">Entretiens cette semaine</span>
+            <div class="icon-circle rounded-circle p-2 d-flex align-items-center justify-content-center" style="background-color: #F3E8FF; color: #7E22CE;">
+              <span class="material-symbols-outlined fs-6">event</span>
+            </div>
+          </div>
+          <h3 class="fw-bold text-dark mb-0">{{ formatVal(stats.kpis.interviewsThisWeek) }}</h3>
+        </div>
+      </div>
+
+      <!-- Avis managers en attente -->
+      <div class="col-xl-3 col-md-6">
+        <div class="fluent-card bg-white p-3 rounded-4 shadow-sm border-0 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold text-uppercase">Avis managers en attente</span>
+            <div class="icon-circle bg-danger-subtle text-danger rounded-circle p-2 d-flex align-items-center justify-content-center">
+              <span class="material-symbols-outlined fs-6">pending_actions</span>
+            </div>
+          </div>
+          <h3 class="fw-bold text-dark mb-0">{{ formatVal(stats.kpis.pendingManagerFeedbacks) }}</h3>
+        </div>
+      </div>
+
+      <!-- Score IA moyen -->
+      <div class="col-xl-3 col-md-6">
+        <div class="fluent-card bg-white p-3 rounded-4 shadow-sm border-0 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold text-uppercase">Score IA moyen</span>
+            <div class="icon-circle bg-primary-subtle text-primary rounded-circle p-2 d-flex align-items-center justify-content-center">
+              <span class="material-symbols-outlined fs-6">psychology</span>
+            </div>
+          </div>
+          <h3 class="fw-bold text-dark mb-0">{{ formatScorePercent(stats.kpis.averageAiScore) }}</h3>
+        </div>
+      </div>
+
+      <!-- Délai moyen de décision -->
+      <div class="col-xl-3 col-md-6">
+        <div class="fluent-card bg-white p-3 rounded-4 shadow-sm border-0 h-100">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-muted fs-8 fw-semibold text-uppercase">Délai moyen de décision</span>
+            <div class="icon-circle bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center">
+              <span class="material-symbols-outlined fs-6">timer</span>
+            </div>
+          </div>
+          <h3 class="fw-bold text-dark mb-0">
+            {{ stats.kpis.averageTimeToDecisionDays ? stats.kpis.averageTimeToDecisionDays + ' j' : '—' }}
+          </h3>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 2. ENTONNOIR DE RECRUTEMENT -->
+    <div class="fluent-card bg-white p-4 rounded-4 shadow-sm border-0 mb-4">
+      <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark border-bottom pb-3">
+        <span class="material-symbols-outlined text-primary">filter_alt</span>
+        Entonnoir de recrutement (Conversion par étape)
+      </h5>
+
+      <div class="funnel-container d-flex flex-column gap-3">
+        <!-- Reçues -->
+        <div>
+          <div class="d-flex justify-content-between fs-8 mb-1">
+            <span class="fw-bold text-dark">1. Reçues</span>
+            <span class="fw-bold text-primary">{{ stats.funnel.received }} (100 %)</span>
+          </div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar bg-primary rounded-pill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Analysées par l'IA -->
+        <div>
+          <div class="d-flex justify-content-between fs-8 mb-1">
+            <span class="fw-bold text-dark">2. Analysées par l'IA</span>
+            <span class="fw-bold text-primary">{{ stats.funnel.aiAnalyzed }} ({{ getFunnelPercentage(stats.funnel.aiAnalyzed, stats.funnel.received) }})</span>
+          </div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar bg-info rounded-pill" [style.width.%]="stats.funnel.received > 0 ? (stats.funnel.aiAnalyzed / stats.funnel.received * 100) : 0"></div>
+          </div>
+        </div>
+
+        <!-- Compatibles -->
+        <div>
+          <div class="d-flex justify-content-between fs-8 mb-1">
+            <span class="fw-bold text-dark">3. Compatibles</span>
+            <span class="fw-bold text-primary">{{ stats.funnel.aiCompatible }} ({{ getFunnelPercentage(stats.funnel.aiCompatible, stats.funnel.aiAnalyzed) }})</span>
+          </div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar bg-success rounded-pill" [style.width.%]="stats.funnel.received > 0 ? (stats.funnel.aiCompatible / stats.funnel.received * 100) : 0"></div>
+          </div>
+        </div>
+
+        <!-- Transmises au manager -->
+        <div>
+          <div class="d-flex justify-content-between fs-8 mb-1">
+            <span class="fw-bold text-dark">4. Transmises au manager</span>
+            <span class="fw-bold text-primary">{{ stats.funnel.transmittedToManager }} ({{ getFunnelPercentage(stats.funnel.transmittedToManager, stats.funnel.aiCompatible) }})</span>
+          </div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar bg-warning rounded-pill" [style.width.%]="stats.funnel.received > 0 ? (stats.funnel.transmittedToManager / stats.funnel.received * 100) : 0"></div>
+          </div>
+        </div>
+
+        <!-- Entretien planifié -->
+        <div>
+          <div class="d-flex justify-content-between fs-8 mb-1">
+            <span class="fw-bold text-dark">5. Entretien planifié</span>
+            <span class="fw-bold text-primary">{{ stats.funnel.interviewScheduled }} ({{ getFunnelPercentage(stats.funnel.interviewScheduled, stats.funnel.transmittedToManager) }})</span>
+          </div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar rounded-pill" style="background-color: #8B5CF6; width: 0%;" [style.width.%]="stats.funnel.received > 0 ? (stats.funnel.interviewScheduled / stats.funnel.received * 100) : 0"></div>
+          </div>
+        </div>
+
+        <!-- Évaluées -->
+        <div>
+          <div class="d-flex justify-content-between fs-8 mb-1">
+            <span class="fw-bold text-dark">6. Évaluées</span>
+            <span class="fw-bold text-primary">{{ stats.funnel.interviewEvaluated }} ({{ getFunnelPercentage(stats.funnel.interviewEvaluated, stats.funnel.interviewScheduled) }})</span>
+          </div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar rounded-pill" style="background-color: #4F46E5; width: 0%;" [style.width.%]="stats.funnel.received > 0 ? (stats.funnel.interviewEvaluated / stats.funnel.received * 100) : 0"></div>
+          </div>
+        </div>
+
+        <!-- Acceptées -->
+        <div>
+          <div class="d-flex justify-content-between fs-8 mb-1">
+            <span class="fw-bold text-dark">7. Acceptées</span>
+            <span class="fw-bold text-success">{{ stats.funnel.accepted }} ({{ getFunnelPercentage(stats.funnel.accepted, stats.funnel.interviewEvaluated) }})</span>
+          </div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar bg-success rounded-pill" [style.width.%]="stats.funnel.received > 0 ? (stats.funnel.accepted / stats.funnel.received * 100) : 0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ROW: ÉVOLUTION RECRUTEMENTS & CONGÉS PAR DÉPARTEMENT -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-7">
+        <div class="fluent-card bg-white p-4 rounded-4 shadow-sm border-0 h-100">
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark border-bottom pb-3">
+            <span class="material-symbols-outlined text-primary">show_chart</span>
+            Évolution des recrutements
+          </h5>
+          <apx-chart *ngIf="recruitmentChartOptions"
             [series]="recruitmentChartOptions.series"
             [chart]="recruitmentChartOptions.chart"
-            [xaxis]="recruitmentChartOptions.xaxis"
-            [stroke]="recruitmentChartOptions.stroke"
             [colors]="recruitmentChartOptions.colors"
-            [tooltip]="recruitmentChartOptions.tooltip"
-            [dataLabels]="recruitmentChartOptions.dataLabels"
-            [grid]="recruitmentChartOptions.grid">
+            [stroke]="recruitmentChartOptions.stroke"
+            [xaxis]="recruitmentChartOptions.xaxis"
+            [grid]="recruitmentChartOptions.grid"
+            [tooltip]="recruitmentChartOptions.tooltip">
           </apx-chart>
         </div>
       </div>
-    </div>
 
-    <!-- Leaves by Department Bar Chart -->
-    <div class="col-lg-5">
-      <div class="fluent-card">
-        <h5 class="fw-bold mb-3 fs-6">Congés par département</h5>
-        <div class="chart-container" style="min-height: 300px;">
-          <apx-chart
-            *ngIf="leaveChartOptions"
+      <div class="col-lg-5">
+        <div class="fluent-card bg-white p-4 rounded-4 shadow-sm border-0 h-100">
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark border-bottom pb-3">
+            <span class="material-symbols-outlined text-primary">bar_chart</span>
+            Congés par département
+          </h5>
+          <apx-chart *ngIf="leaveChartOptions"
             [series]="leaveChartOptions.series"
             [chart]="leaveChartOptions.chart"
-            [xaxis]="leaveChartOptions.xaxis"
-            [plotOptions]="leaveChartOptions.plotOptions"
             [colors]="leaveChartOptions.colors"
-            [dataLabels]="leaveChartOptions.dataLabels"
+            [plotOptions]="leaveChartOptions.plotOptions"
+            [xaxis]="leaveChartOptions.xaxis"
             [grid]="leaveChartOptions.grid">
           </apx-chart>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Latest Recruitments (Third Row) -->
-  <div class="row">
-    <div class="col-12">
-      <div class="fluent-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold mb-0 fs-6">Derniers recrutements (Pipeline IA)</h5>
-          <a routerLink="/dashboard/recruitment" class="text-btn text-primary border-0 bg-transparent fs-7 text-decoration-none fw-medium">Voir tout</a>
+    <!-- 4. SECTION INTELLIGENCE ARTIFICIELLE (3 Cards in a row) -->
+    <div class="fluent-card bg-white p-4 rounded-4 shadow-sm border-0 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom flex-wrap gap-2">
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-dark">
+          <span class="material-symbols-outlined text-primary">auto_awesome</span>
+          Intelligence Artificielle & Analyses CV
+        </h5>
+
+        <!-- Service AI Health Status Indicator -->
+        <div class="d-flex align-items-center gap-2 fs-8" [title]="'Dernière analyse : ' + (stats.aiService.lastAnalysisAt | date:'dd/MM/yyyy HH:mm') + ' | Analyses (30j) : ' + stats.aiService.analysesLast30Days">
+          <span class="badge rounded-pill px-3 py-1 fs-8 fw-medium d-inline-flex align-items-center gap-1 border"
+                [class.bg-success-subtle]="stats.aiService.online"
+                [class.text-success]="stats.aiService.online"
+                [class.border-success-subtle]="stats.aiService.online"
+                [class.bg-danger-subtle]="!stats.aiService.online"
+                [class.text-danger]="!stats.aiService.online"
+                [class.border-danger-subtle]="!stats.aiService.online">
+            <span class="status-dot" [class.bg-success]="stats.aiService.online" [class.bg-danger]="!stats.aiService.online"></span>
+            {{ stats.aiService.online ? 'IA en ligne (' + stats.aiService.methode + ')' : 'IA hors ligne' }}
+          </span>
         </div>
-        <div class="table-responsive">
-          <table class="fluent-table">
-            <thead>
-              <tr>
-                <th>Nom</th>
-                <th>Poste</th>
-                <th>Score IA</th>
-                <th>Statut</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let candidate of recentCandidates">
-                <td class="fw-semibold">{{ candidate.name }}</td>
-                <td>{{ candidate.position }}</td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="fluent-badge" [ngClass]="getScoreClass(candidate.aiScore)">
-                      {{ candidate.aiScore }}%
-                    </span>
-                    <div class="progress flex-grow-1 d-none d-sm-flex" style="height: 4px; width: 60px;">
-                      <div class="progress-bar" 
-                           [ngClass]="getScoreBg(candidate.aiScore)"
-                           [style.width.%]="candidate.aiScore"></div>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span class="fluent-badge" 
-                        [ngClass]="{
-                          'success': candidate.status === 'Embauché',
-                          'primary': candidate.status === 'Entretien',
-                          'warning': candidate.status === 'Nouveau',
-                          'error': candidate.status === 'Rejeté'
-                        }">
-                    {{ candidate.status }}
-                  </span>
-                </td>
-                <td>
-                  <a [routerLink]="['/dashboard/ai-analysis']" class="btn btn-sm btn-light text-primary d-inline-flex align-items-center gap-1 border-0">
-                    <span class="material-symbols-outlined fs-6">psychology</span>
-                    Analyse
-                  </a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      </div>
+
+      <div class="row g-4">
+        <!-- Card 1: Recommandations IA -->
+        <div class="col-lg-4">
+          <div class="border rounded-4 p-3 bg-light h-100">
+            <h6 class="fw-bold text-dark mb-3">Recommandations IA</h6>
+            <apx-chart *ngIf="aiRecommendationChartOptions"
+              [series]="aiRecommendationChartOptions.series"
+              [chart]="aiRecommendationChartOptions.chart"
+              [labels]="aiRecommendationChartOptions.labels"
+              [colors]="aiRecommendationChartOptions.colors"
+              [legend]="aiRecommendationChartOptions.legend">
+            </apx-chart>
+          </div>
+        </div>
+
+        <!-- Card 2: Distribution des scores -->
+        <div class="col-lg-4">
+          <div class="border rounded-4 p-3 bg-light h-100">
+            <h6 class="fw-bold text-dark mb-3">Distribution des scores (Tranches de 10%)</h6>
+            <apx-chart *ngIf="scoreDistributionChartOptions"
+              [series]="scoreDistributionChartOptions.series"
+              [chart]="scoreDistributionChartOptions.chart"
+              [colors]="scoreDistributionChartOptions.colors"
+              [plotOptions]="scoreDistributionChartOptions.plotOptions"
+              [xaxis]="scoreDistributionChartOptions.xaxis"
+              [grid]="scoreDistributionChartOptions.grid">
+            </apx-chart>
+          </div>
+        </div>
+
+        <!-- Card 3: Compétences les plus manquantes -->
+        <div class="col-lg-4">
+          <div class="border rounded-4 p-3 bg-light h-100">
+            <h6 class="fw-bold text-dark mb-3">Compétences les plus manquantes</h6>
+            <apx-chart *ngIf="missingSkillsChartOptions"
+              [series]="missingSkillsChartOptions.series"
+              [chart]="missingSkillsChartOptions.chart"
+              [colors]="missingSkillsChartOptions.colors"
+              [plotOptions]="missingSkillsChartOptions.plotOptions"
+              [dataLabels]="missingSkillsChartOptions.dataLabels"
+              [xaxis]="missingSkillsChartOptions.xaxis"
+              [grid]="missingSkillsChartOptions.grid">
+            </apx-chart>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- 5. CONCORDANCE IA / MANAGERS (3x3 Matrix) -->
+    <div class="fluent-card bg-white p-4 rounded-4 shadow-sm border-0 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+        <div>
+          <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+            <span class="material-symbols-outlined text-primary">fact_check</span>
+            Taux de concordance : {{ getAgreementPercent(stats.aiManagerAgreement.agreementRate) }} %
+            <span class="fs-8 fw-normal text-muted">(sur {{ stats.aiManagerAgreement.totalPairs }} candidats évalués)</span>
+          </h5>
+          <p class="text-muted fs-8 mb-0">Croisement entre la recommandation IA et l'avis final du manager.</p>
+        </div>
+      </div>
+
+      <div *ngIf="stats.aiManagerAgreement.totalPairs === 0" class="text-center py-4 text-muted fs-8 fst-italic">
+        Pas encore assez d'entretiens évalués.
+      </div>
+
+      <div *ngIf="stats.aiManagerAgreement.totalPairs > 0" class="table-responsive">
+        <table class="table table-bordered align-middle text-center mb-2">
+          <thead>
+            <tr class="table-light">
+              <th style="width: 25%;">IA \ Manager</th>
+              <th style="width: 25%;" class="text-success">Favorable</th>
+              <th style="width: 25%;" class="text-warning">Réservé</th>
+              <th style="width: 25%;" class="text-danger">Défavorable</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th class="table-light text-start text-success">Compatible</th>
+              <td class="bg-success-subtle border-success-subtle text-success fw-bold">
+                ✓ {{ stats.aiManagerAgreement.matrix.compatibleFavorable }}
+              </td>
+              <td>{{ stats.aiManagerAgreement.matrix.compatibleReserve }}</td>
+              <td>{{ stats.aiManagerAgreement.matrix.compatibleDefavorable }}</td>
+            </tr>
+            <tr>
+              <th class="table-light text-start text-warning">À examiner</th>
+              <td>{{ stats.aiManagerAgreement.matrix.aExaminerFavorable }}</td>
+              <td class="bg-success-subtle border-success-subtle text-success fw-bold">
+                ✓ {{ stats.aiManagerAgreement.matrix.aExaminerReserve }}
+              </td>
+              <td>{{ stats.aiManagerAgreement.matrix.aExaminerDefavorable }}</td>
+            </tr>
+            <tr>
+              <th class="table-light text-start text-danger">Non compatible</th>
+              <td>{{ stats.aiManagerAgreement.matrix.nonCompatibleFavorable }}</td>
+              <td>{{ stats.aiManagerAgreement.matrix.nonCompatibleReserve }}</td>
+              <td class="bg-success-subtle border-success-subtle text-success fw-bold">
+                ✓ {{ stats.aiManagerAgreement.matrix.nonCompatibleDefavorable }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="fs-8 text-muted fst-italic">
+          Chaque désaccord est un exemple qui permettra d'améliorer le modèle IA.
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. ACTIONS REQUISES -->
+    <div class="fluent-card bg-white p-4 rounded-4 shadow-sm border-0 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+        <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-warning">error_outline</span>
+          Actions requises
+          <span class="badge rounded-pill bg-danger fs-8" *ngIf="totalActionsCount > 0">{{ totalActionsCount }}</span>
+        </h5>
+      </div>
+
+      <!-- No Actions Required Empty State -->
+      <div *ngIf="totalActionsCount === 0" class="alert alert-success rounded-3 text-center py-3 mb-0">
+        <span class="material-symbols-outlined fs-3 align-middle me-2">check_circle</span>
+        Aucune action en attente ✓
+      </div>
+
+      <div *ngIf="totalActionsCount > 0">
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs border-bottom-0 mb-3" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link fs-8 fw-semibold" [class.active]="activeActionTab === 'unprocessed'" (click)="activeActionTab = 'unprocessed'">
+              Candidatures non traitées
+              <span class="badge rounded-pill bg-secondary ms-1">{{ stats.actionsRequired.totalUnprocessedCount }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link fs-8 fw-semibold" [class.active]="activeActionTab === 'aiErrors'" (click)="activeActionTab = 'aiErrors'">
+              Analyses IA en erreur
+              <span class="badge rounded-pill bg-danger ms-1">{{ stats.actionsRequired.totalAiErrorsCount }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link fs-8 fw-semibold" [class.active]="activeActionTab === 'missingFeedbacks'" (click)="activeActionTab = 'missingFeedbacks'">
+              Entretiens sans avis
+              <span class="badge rounded-pill bg-warning text-dark ms-1">{{ stats.actionsRequired.totalMissingFeedbacksCount }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link fs-8 fw-semibold" [class.active]="activeActionTab === 'expiringOffers'" (click)="activeActionTab = 'expiringOffers'">
+              Offres expirant bientôt
+              <span class="badge rounded-pill bg-info ms-1">{{ stats.actionsRequired.totalExpiringOffersCount }}</span>
+            </button>
+          </li>
+        </ul>
+
+        <!-- Tab 1: Unprocessed Applications -->
+        <div *ngIf="activeActionTab === 'unprocessed'">
+          <div *ngIf="stats.actionsRequired.unprocessedApplications.length === 0" class="text-muted fs-8 py-3">Aucune candidature en attente.</div>
+          <div class="list-group list-group-flush" *ngIf="stats.actionsRequired.unprocessedApplications.length > 0">
+            <div *ngFor="let item of stats.actionsRequired.unprocessedApplications" 
+                 class="list-group-item d-flex justify-content-between align-items-center py-3 cursor-pointer hover-bg-light"
+                 [routerLink]="['/dashboard/admin-candidates', item.id]">
+              <div>
+                <div class="fw-bold text-dark fs-7">{{ item.name }}</div>
+                <div class="text-muted fs-8">Poste : {{ item.jobTitle }}</div>
+              </div>
+              <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-1 fs-8">
+                En attente depuis {{ item.daysPending }} jours
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: AI Errors -->
+        <div *ngIf="activeActionTab === 'aiErrors'">
+          <div *ngIf="stats.actionsRequired.aiErrors.length === 0" class="text-muted fs-8 py-3">Aucune erreur d'analyse IA.</div>
+          <div class="list-group list-group-flush" *ngIf="stats.actionsRequired.aiErrors.length > 0">
+            <div *ngFor="let item of stats.actionsRequired.aiErrors" class="list-group-item d-flex justify-content-between align-items-center py-3">
+              <div>
+                <div class="fw-bold text-dark fs-7" [routerLink]="['/dashboard/admin-candidates', item.id]" style="cursor: pointer;">
+                  {{ item.name }}
+                </div>
+                <div class="text-danger fs-8">Erreur : {{ item.aiError }}</div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1 rounded-3 fs-8" 
+                      (click)="relaunchAnalysis(item.id)" 
+                      [disabled]="relaunchingMap[item.id]">
+                <span class="spinner-border spinner-border-sm" *ngIf="relaunchingMap[item.id]"></span>
+                <span class="material-symbols-outlined fs-7" *ngIf="!relaunchingMap[item.id]">refresh</span>
+                Relancer l'analyse
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Missing Feedbacks -->
+        <div *ngIf="activeActionTab === 'missingFeedbacks'">
+          <div *ngIf="stats.actionsRequired.missingFeedbacks.length === 0" class="text-muted fs-8 py-3">Aucun avis manager manquant.</div>
+          <div class="list-group list-group-flush" *ngIf="stats.actionsRequired.missingFeedbacks.length > 0">
+            <div *ngFor="let item of stats.actionsRequired.missingFeedbacks" 
+                 class="list-group-item d-flex justify-content-between align-items-center py-3 cursor-pointer hover-bg-light"
+                 [routerLink]="['/manager/interviews', item.interviewId]">
+              <div>
+                <div class="fw-bold text-dark fs-7">Candidat : {{ item.candidateName }}</div>
+                <div class="text-muted fs-8">Manager : {{ item.managerName }}</div>
+              </div>
+              <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 fs-8">
+                Entretien du {{ item.interviewDate | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Expiring Offers -->
+        <div *ngIf="activeActionTab === 'expiringOffers'">
+          <div *ngIf="stats.actionsRequired.expiringOffers.length === 0" class="text-muted fs-8 py-3">Aucune offre n'expire sous 7 jours.</div>
+          <div class="list-group list-group-flush" *ngIf="stats.actionsRequired.expiringOffers.length > 0">
+            <div *ngFor="let item of stats.actionsRequired.expiringOffers" 
+                 class="list-group-item d-flex justify-content-between align-items-center py-3 cursor-pointer hover-bg-light"
+                 [routerLink]="['/dashboard/job-offers', item.offerId]">
+              <div>
+                <div class="fw-bold text-dark fs-7">{{ item.title }}</div>
+                <div class="text-muted fs-8">Date limite de candidature</div>
+              </div>
+              <span class="badge bg-info-subtle text-info-emphasis rounded-pill px-3 py-1 fs-8">
+                Expire le {{ item.applicationDeadline | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. ROW OF 2 TABLES: UPCOMING INTERVIEWS & TOP OFFERS -->
+    <div class="row g-4 mb-4">
+      
+      <!-- Table 1: Entretiens des 7 prochains jours -->
+      <div class="col-lg-6">
+        <div class="fluent-card bg-white p-4 rounded-4 shadow-sm border-0 h-100">
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark border-bottom pb-3">
+            <span class="material-symbols-outlined text-primary">event_upcoming</span>
+            Entretiens des 7 prochains jours
+          </h5>
+
+          <div *ngIf="stats.upcomingInterviews.length === 0" class="text-center text-muted py-4 fs-8">
+            Aucun entretien planifié pour les 7 prochains jours.
+          </div>
+
+          <div class="table-responsive" *ngIf="stats.upcomingInterviews.length > 0">
+            <table class="table table-hover align-middle mb-0 fs-8">
+              <thead class="table-light">
+                <tr>
+                  <th>Date & Heure</th>
+                  <th>Candidat</th>
+                  <th>Manager</th>
+                  <th>Guide IA</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let it of stats.upcomingInterviews">
+                  <td class="fw-medium text-dark">
+                    {{ it.interviewDate | date:'dd/MM' }} à {{ it.interviewTime }}
+                  </td>
+                  <td>
+                    <div class="fw-bold text-dark">{{ it.candidateName }}</div>
+                    <div class="text-muted fs-8">{{ it.jobTitle }}</div>
+                  </td>
+                  <td>{{ it.managerName }}</td>
+                  <td>
+                    <span class="badge rounded-pill bg-success-subtle text-success fs-8" *ngIf="it.aiQuestionsStatus === 'TERMINEE'">
+                      ✓ Questions IA prêtes
+                    </span>
+                    <span class="badge rounded-pill bg-secondary-subtle text-secondary fs-8" *ngIf="it.aiQuestionsStatus !== 'TERMINEE'">
+                      En attente
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table 2: Meilleures offres -->
+      <div class="col-lg-6">
+        <div class="fluent-card bg-white p-4 rounded-4 shadow-sm border-0 h-100">
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-dark border-bottom pb-3">
+            <span class="material-symbols-outlined text-primary">military_tech</span>
+            Meilleures offres (Top 5 par volume)
+          </h5>
+
+          <div *ngIf="stats.topOffers.length === 0" class="text-center text-muted py-4 fs-8">
+            Aucune offre enregistrée sur la période.
+          </div>
+
+          <div class="table-responsive" *ngIf="stats.topOffers.length > 0">
+            <table class="table table-hover align-middle mb-0 fs-8">
+              <thead class="table-light">
+                <tr>
+                  <th>Offre</th>
+                  <th>Candidatures</th>
+                  <th>Score IA Moy.</th>
+                  <th>Meilleur profil</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let offer of stats.topOffers">
+                  <td>
+                    <div class="fw-bold text-dark">{{ offer.title }}</div>
+                    <div class="text-muted fs-8">{{ offer.department }}</div>
+                  </td>
+                  <td class="fw-bold text-primary">{{ offer.applicationsCount }}</td>
+                  <td>
+                    <span class="fw-semibold text-dark">{{ formatScorePercent(offer.averageAiScore) }}</span>
+                  </td>
+                  <td>
+                    <div *ngIf="offer.bestCandidateName">
+                      <div class="fw-medium text-dark">{{ offer.bestCandidateName }}</div>
+                      <span class="badge bg-success-subtle text-success fs-8">{{ formatScorePercent(offer.bestCandidateScore) }}</span>
+                    </div>
+                    <div *ngIf="!offer.bestCandidateName" class="text-muted fst-italic">—</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
+
 </div>

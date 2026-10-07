@@ -1,109 +1,187 @@
-<div class="login-page d-flex align-items-center justify-content-center">
-  <div class="fluent-card login-card">
-    <!-- Brand Header -->
-    <div class="text-center mb-4">
-      <div class="brand-badge mb-2">
-        <span class="material-symbols-outlined brand-icon">diversity_3</span>
+<div class="login-page">
+
+  <!-- ================= Panneau gauche ================= -->
+  <section class="panel">
+    <div class="panel-inner">
+
+      <!-- Marque -->
+      <div class="brand">
+        <div class="logo">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+            <circle cx="12" cy="8" r="3"/><circle cx="5.5" cy="10" r="2.2"/><circle cx="18.5" cy="10" r="2.2"/>
+            <path d="M6.5 19c0-3 2.4-4.8 5.5-4.8s5.5 1.8 5.5 4.8z"/>
+            <path d="M1.5 18c0-2.2 1.7-3.6 4-3.6-1 1-1.6 2.3-1.7 3.6zM22.5 18c0-2.2-1.7-3.6-4-3.6 1 1 1.6 2.3 1.7 3.6z"/>
+          </svg>
+        </div>
+        <div>
+          <b>CorpFlow HR</b>
+          <span>Gestion intelligente des ressources humaines</span>
+        </div>
       </div>
-      <h2 class="fw-bold mb-1 fs-4 text-gradient">CorpFlow HR</h2>
-      <p class="text-muted fs-7">Gestion Intelligente des Ressources Humaines</p>
+
+      <!-- Accroche -->
+      <div class="headline">
+        <h1>Recrutez, gérez et faites grandir <em>vos talents</em></h1>
+        <p>Une plateforme unique pour vos équipes, vos recrutements et vos formations.</p>
+      </div>
+
+      <!-- Illustration en grand -->
+      <div class="visual" aria-hidden="true">
+        <div class="frame">
+                   <img src="assets/images/Gestionnaire-des-ressources-humaines.png" alt="">
+        </div>
+
+        <!-- Étiquettes flottantes -->
+        <div class="chip chip-top">
+          <span class="chip-icon chip-green">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <div><b>CV analysé par l'IA</b><small>Score et compétences en un clic</small></div>
+        </div>
+
+        <div class="chip chip-bottom">
+          <span class="chip-icon chip-purple">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
+          </span>
+          <div><b>Entretien planifié</b><small>Questions générées automatiquement</small></div>
+        </div>
+      </div>
+
+      <!-- Fonctionnalités -->
+      <ul class="features">
+        <li>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>
+          Recrutement IA
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>
+          Congés et équipes
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="m9 14-1.5 7L12 19l4.5 2L15 14"/></svg>
+          Formations
+        </li>
+      </ul>
+
+      <div class="panel-foot">© {{ currentYear }} CorpFlow HR. Tous droits réservés.</div>
+    </div>
+  </section>
+
+  <!-- ================= Formulaire ================= -->
+  <section class="form-side">
+
+    <div class="form-top">
+      <!-- Marque visible uniquement sur mobile -->
+      <div class="mobile-brand">
+        <div class="logo logo-sm">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+            <circle cx="12" cy="8" r="3"/><circle cx="5.5" cy="10" r="2.2"/><circle cx="18.5" cy="10" r="2.2"/>
+            <path d="M6.5 19c0-3 2.4-4.8 5.5-4.8s5.5 1.8 5.5 4.8z"/>
+          </svg>
+        </div>
+        CorpFlow HR
+      </div>
+
+      <div class="secure">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4" stroke-linecap="round"/></svg>
+        Connexion sécurisée
+      </div>
     </div>
 
-    <!-- Mode Toggle Login -->
-    <ng-container *ngIf="mode === 'login'">
-      <div class="mb-3">
-        <button type="button" (click)="loginWithKeycloak()" class="fluent-btn-primary w-100 justify-content-center py-2 d-flex align-items-center gap-2">
-          <span class="material-symbols-outlined fs-5">security</span>
-          Se connecter avec Keycloak
-        </button>
-      </div>
+    <div class="form-box">
 
-      <div class="d-flex align-items-center my-3">
-        <hr class="flex-grow-1 text-muted opacity-25">
-        <span class="mx-2 text-muted fs-8">ou connexion locale</span>
-        <hr class="flex-grow-1 text-muted opacity-25">
-      </div>
+      <!-- ========== Mode connexion ========== -->
+      <ng-container *ngIf="mode === 'login'">
+        <h2>Bon retour <span>👋</span></h2>
+        <p class="sub">Connectez-vous pour accéder à votre espace.</p>
 
-      <form (ngSubmit)="handleLogin()">
-        <div class="mb-3">
-          <label for="email" class="form-label fs-7 fw-semibold">Adresse Email</label>
-          <input 
-            type="email" 
-            id="email" 
-            name="email" 
-            class="fluent-input" 
-            placeholder="nom@corp.com" 
-            [(ngModel)]="email" 
-            required>
-        </div>
-        
-        <div class="mb-3">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <label for="password" class="form-label fs-7 fw-semibold mb-0">Mot de passe</label>
-            <a (click)="mode = 'forgot'" class="forgot-link text-decoration-none fs-7 cursor-pointer">Mot de passe oublié ?</a>
+        <form #loginForm="ngForm" novalidate
+              (ngSubmit)="loginForm.valid ? handleLogin() : loginForm.form.markAllAsTouched()">
+
+          <label class="lbl" for="email">Adresse email ou nom d'utilisateur</label>
+          <div class="fld" [class.invalid]="emailCtrl.invalid && emailCtrl.touched">
+            <svg class="fld-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input id="email" name="email" type="text"
+                   placeholder="nom@entreprise.com"
+                   autocomplete="username" autocapitalize="none" spellcheck="false"
+                   [(ngModel)]="email" #emailCtrl="ngModel" required>
           </div>
-          <input 
-            type="password" 
-            id="password" 
-            name="password" 
-            class="fluent-input" 
-            placeholder="••••••••" 
-            [(ngModel)]="password" 
-            required>
-        </div>
+          <small class="err" *ngIf="emailCtrl.invalid && emailCtrl.touched">
+            Veuillez saisir votre adresse email ou votre nom d'utilisateur.
+          </small>
 
-        <div class="form-check mb-4">
-          <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe" [(ngModel)]="rememberMe">
-          <label class="form-check-label fs-7 text-muted" for="rememberMe">
-            Se souvenir de moi
+          <div class="lbl-row">
+            <label class="lbl" for="password">Mot de passe</label>
+            <a class="link" tabindex="0" (click)="mode = 'forgot'" (keydown.enter)="mode = 'forgot'">Mot de passe oublié ?</a>
+          </div>
+          <div class="fld" [class.invalid]="passwordCtrl.invalid && passwordCtrl.touched">
+            <svg class="fld-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <input id="password" name="password" [type]="showPassword ? 'text' : 'password'"
+                   placeholder="••••••••" autocomplete="current-password"
+                   [(ngModel)]="password" #passwordCtrl="ngModel" required>
+            <button class="eye" type="button" (click)="showPassword = !showPassword"
+                    [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">
+              <svg *ngIf="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg *ngIf="showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 3.9M6.6 6.6C3.8 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+            </button>
+          </div>
+          <small class="err" *ngIf="passwordCtrl.invalid && passwordCtrl.touched">
+            Le mot de passe est obligatoire.
+          </small>
+
+          <label class="remember">
+            <input class="check" type="checkbox" name="rememberMe" [(ngModel)]="rememberMe">
+            <span>Se souvenir de moi</span>
           </label>
-        </div>
 
-        <button type="submit" class="fluent-btn-primary w-100 justify-content-center py-2" [disabled]="loading">
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" *ngIf="loading"></span>
-          {{ loading ? 'Connexion en cours...' : 'Se connecter' }}
-        </button>
-      </form>
+          <button class="submit" type="submit" [disabled]="loading">
+            <span class="spinner" *ngIf="loading"></span>
+            {{ loading ? 'Connexion en cours…' : 'Se connecter' }}
+            <svg *ngIf="!loading" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+      </ng-container>
 
-      <!-- Quick access demo helper -->
-      <div class="demo-account mt-4 p-2 rounded text-center">
-        <span class="d-block text-muted fs-7 mb-1">💡 Mode Démo</span>
-        <button (click)="fillDemoCredentials()" class="btn btn-sm btn-outline-primary fs-7 px-3 py-1">Auto-remplir</button>
-      </div>
-    </ng-container>
-
-    <!-- Mode Toggle Forgot Password -->
-    <ng-container *ngIf="mode === 'forgot'">
-      <h3 class="fs-5 fw-bold mb-2">Réinitialiser le mot de passe</h3>
-      <p class="text-muted fs-7 mb-4">Entrez votre adresse email. Nous vous enverrons des instructions pour réinitialiser votre mot de passe.</p>
-
-      <form (ngSubmit)="handleForgot()">
-        <div class="mb-4">
-          <label for="forgotEmail" class="form-label fs-7 fw-semibold">Adresse Email</label>
-          <input 
-            type="email" 
-            id="forgotEmail" 
-            name="forgotEmail" 
-            class="fluent-input" 
-            placeholder="nom@corp.com" 
-            [(ngModel)]="forgotEmail" 
-            required>
-        </div>
-
-        <button type="submit" class="fluent-btn-primary w-100 justify-content-center py-2 mb-2" [disabled]="loading">
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" *ngIf="loading"></span>
-          {{ loading ? 'Envoi...' : 'Envoyer les instructions' }}
-        </button>
-
-        <button type="button" (click)="mode = 'login'" class="fluent-btn-secondary w-100 justify-content-center py-2">
+      <!-- ========== Mode mot de passe oublié ========== -->
+      <ng-container *ngIf="mode === 'forgot'">
+        <button type="button" class="back" (click)="mode = 'login'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
           Retour à la connexion
         </button>
-      </form>
-    </ng-container>
 
-    <!-- Feedback Alert -->
-    <div class="alert mt-3 py-2 px-3 fs-7" [ngClass]="alertClass" *ngIf="alertMsg">
-      {{ alertMsg }}
+        <h2>Mot de passe oublié <span>🔑</span></h2>
+        <p class="sub">Indiquez votre adresse email : nous vous enverrons un lien de réinitialisation.</p>
+
+        <form #forgotForm="ngForm" novalidate
+              (ngSubmit)="forgotForm.valid ? handleForgot() : forgotForm.form.markAllAsTouched()">
+          <label class="lbl" for="forgotEmail">Adresse email</label>
+          <div class="fld" [class.invalid]="forgotCtrl.invalid && forgotCtrl.touched">
+            <svg class="fld-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input id="forgotEmail" name="forgotEmail" type="email"
+                   placeholder="nom@entreprise.com" autocomplete="email"
+                   [(ngModel)]="forgotEmail" #forgotCtrl="ngModel" required email>
+          </div>
+          <small class="err" *ngIf="forgotCtrl.invalid && forgotCtrl.touched">
+            {{ forgotCtrl.errors?.['required'] ? "L'adresse email est obligatoire." : 'Adresse email invalide.' }}
+          </small>
+
+          <button class="submit" type="submit" [disabled]="loading">
+            <span class="spinner" *ngIf="loading"></span>
+            {{ loading ? 'Envoi…' : 'Envoyer le lien' }}
+          </button>
+        </form>
+      </ng-container>
+
+      <!-- Message de retour (succès ou erreur) -->
+      <div class="alert feedback" [ngClass]="alertClass" *ngIf="alertMsg" role="alert">
+        {{ alertMsg }}
+      </div>
+
+      <div class="help">
+        Vous n'avez pas de compte ? <span>Contactez votre administrateur RH.</span>
+      </div>
     </div>
-  </div>
+
+    <div class="form-foot">CorpFlow HR · Plateforme RH intelligente</div>
+  </section>
 </div>

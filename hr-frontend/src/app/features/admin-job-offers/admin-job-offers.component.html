@@ -1,0 +1,230 @@
+<div class="admin-job-offers-page">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Gestion des Offres d'Emploi</h2>
+      <p class="text-muted mb-0">Créez, modifiez, publiez ou fermez les offres d'emploi de l'entreprise.</p>
+    </div>
+    <button class="fluent-btn-primary d-flex align-items-center gap-2" (click)="openAddModal()">
+      <span class="material-symbols-outlined fs-5">add</span>
+      Nouvelle Offre
+    </button>
+  </div>
+
+  <div class="alert alert-success alert-dismissible fade show" role="alert" *ngIf="successMessage">
+    {{ successMessage }}
+    <button type="button" class="btn-close" (click)="clearMessages()" aria-label="Close"></button>
+  </div>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert" *ngIf="errorMessage">
+    {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="clearMessages()" aria-label="Close"></button>
+  </div>
+
+  <div class="text-center py-5" *ngIf="loading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4" *ngIf="!loading">
+    <div class="col-md-3">
+      <label class="form-label fs-8 text-muted mb-1">Recherche</label>
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white"><span class="material-symbols-outlined fs-6">search</span></span>
+        <input type="text" class="form-control border-start-0 ps-0" placeholder="Titre, département..." [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()">
+      </div>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-8 text-muted mb-1">Département</label>
+      <select class="form-select form-select-sm" [(ngModel)]="departmentFilter" (ngModelChange)="applyFilters()">
+        <option value="">Tous</option>
+        <option value="IT">IT</option>
+        <option value="RH">RH</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Finance">Finance</option>
+        <option value="Direction">Direction</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-8 text-muted mb-1">Contrat</label>
+      <select class="form-select form-select-sm" [(ngModel)]="contractFilter" (ngModelChange)="applyFilters()">
+        <option value="">Tous</option>
+        <option value="CDI">CDI</option>
+        <option value="CDD">CDD</option>
+        <option value="Stage">Stage</option>
+        <option value="Alternance">Alternance</option>
+        <option value="Freelance">Freelance</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-8 text-muted mb-1">Niveau</label>
+      <select class="form-select form-select-sm" [(ngModel)]="experienceFilter" (ngModelChange)="applyFilters()">
+        <option value="">Tous</option>
+        <option value="Junior">Junior</option>
+        <option value="Intermédiaire">Intermédiaire</option>
+        <option value="Senior">Senior</option>
+        <option value="Expert">Expert</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label fs-8 text-muted mb-1">Statut</label>
+      <select class="form-select form-select-sm" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+        <option value="">Tous les statuts</option>
+        <option value="DRAFT">Brouillon</option>
+        <option value="PUBLISHED">Publiée</option>
+        <option value="CLOSED">Fermée</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="fluent-card" *ngIf="!loading">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Poste</th>
+            <th>Département</th>
+            <th>Type de contrat</th>
+            <th>Niveau</th>
+            <th>Date limite</th>
+            <th>Postes</th>
+            <th>Statut</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let offer of filteredOffers">
+            <td>
+              <div class="fw-medium text-dark">{{ offer.title }}</div>
+              <div class="fs-8 text-muted"><span class="material-symbols-outlined fs-9 align-middle">location_on</span> {{ offer.location || 'Non spécifié' }}</div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border">{{ offer.department }}</span>
+            </td>
+            <td>{{ offer.contractType }}</td>
+            <td>{{ offer.experienceLevel }}</td>
+            <td>
+              <div class="fw-medium">{{ offer.applicationDeadline | date:'shortDate' }}</div>
+              <div class="fs-8 text-muted">Publié le: {{ offer.publicationDate ? (offer.publicationDate | date:'shortDate') : '-' }}</div>
+            </td>
+            <td>{{ offer.numberOfPositions }}</td>
+            <td>
+              <span class="badge rounded-pill" [ngClass]="getStatusBadgeClass(offer.status)">
+                {{ offer.status }}
+              </span>
+            </td>
+            <td class="text-end">
+              <div class="dropdown">
+                <button class="btn btn-sm btn-light btn-icon" data-bs-toggle="dropdown">
+                  <span class="material-symbols-outlined fs-5">more_vert</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                  <li><a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0)" (click)="openEditModal(offer)"><span class="material-symbols-outlined fs-6 text-primary">visibility</span> Consulter / Modifier</a></li>
+                  <li *ngIf="offer.status !== 'PUBLISHED'"><a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0)" (click)="updateStatus(offer, 'PUBLISHED')"><span class="material-symbols-outlined fs-6 text-success">publish</span> Publier</a></li>
+                  <li *ngIf="offer.status !== 'CLOSED'"><a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0)" (click)="updateStatus(offer, 'CLOSED')"><span class="material-symbols-outlined fs-6 text-warning">block</span> Fermer</a></li>
+                  <li *ngIf="offer.status !== 'DRAFT'"><a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0)" (click)="updateStatus(offer, 'DRAFT')"><span class="material-symbols-outlined fs-6 text-secondary">draft</span> Brouillon</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="javascript:void(0)" (click)="deleteOffer(offer.id)"><span class="material-symbols-outlined fs-6">delete</span> Supprimer</a></li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredOffers.length === 0">
+            <td colspan="7" class="text-center py-4 text-muted">
+              Aucune offre d'emploi trouvée
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ajout/Modification -->
+<div class="modal fade show" [style.display]="showModal ? 'block' : 'none'" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold">{{ isEditing ? 'Modifier l\'offre' : 'Nouvelle offre d\'emploi' }}</h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form #offerForm="ngForm" (ngSubmit)="saveOffer()">
+          <div class="row g-3">
+            <div class="col-md-12">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Titre du poste <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="title" [(ngModel)]="currentOffer.title" required>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Département <span class="text-danger">*</span></label>
+              <select class="form-select" name="department" [(ngModel)]="currentOffer.department" required>
+                <option value="IT">IT</option>
+                <option value="RH">RH</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Finance">Finance</option>
+                <option value="Direction">Direction</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Localisation</label>
+              <input type="text" class="form-control" name="location" [(ngModel)]="currentOffer.location">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Type de contrat</label>
+              <select class="form-select" name="contractType" [(ngModel)]="currentOffer.contractType">
+                <option value="CDI">CDI</option>
+                <option value="CDD">CDD</option>
+                <option value="Stage">Stage</option>
+                <option value="Alternance">Alternance</option>
+                <option value="Freelance">Freelance</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Niveau d'expérience</label>
+              <select class="form-select" name="experienceLevel" [(ngModel)]="currentOffer.experienceLevel">
+                <option value="Junior">Junior</option>
+                <option value="Intermédiaire">Intermédiaire</option>
+                <option value="Senior">Senior</option>
+                <option value="Expert">Expert</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Nombre de postes</label>
+              <input type="number" class="form-control" name="numberOfPositions" [(ngModel)]="currentOffer.numberOfPositions" min="1">
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Salaire Min (DT)</label>
+              <input type="number" class="form-control" name="minSalary" [(ngModel)]="minSalary" placeholder="ex: 2500">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Salaire Max (DT)</label>
+              <input type="number" class="form-control" name="maxSalary" [(ngModel)]="maxSalary" placeholder="ex: 3500">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Date limite de candidature <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" name="applicationDeadline" [(ngModel)]="currentOffer.applicationDeadline" required>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Compétences requises (séparées par des virgules)</label>
+              <input type="text" class="form-control" name="requiredSkills" [(ngModel)]="currentOffer.requiredSkills" placeholder="ex: Java, Angular, Spring Boot">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fs-8 fw-medium text-muted mb-1">Description <span class="text-danger">*</span></label>
+              <textarea class="form-control" name="description" [(ngModel)]="currentOffer.description" rows="4" required></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-light" (click)="closeModal()">Annuler</button>
+        <button type="button" class="fluent-btn-primary" (click)="saveOffer()" [disabled]="!offerForm.form.valid">
+          {{ isEditing ? 'Mettre à jour' : 'Créer l\'offre' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

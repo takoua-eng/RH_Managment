@@ -1,0 +1,257 @@
+<div class="departments-page">
+  <!-- Section Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <h2 class="fw-bold mb-1">Gestion des Départements</h2>
+      <p class="text-muted mb-0">Structurez votre organisation et gérez les affectations d'équipe.</p>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+      <button (click)="openAddModal()" class="fluent-btn-primary">
+        <span class="material-symbols-outlined">domain_add</span>
+        Ajouter un Département
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Toolbar -->
+  <div class="fluent-card mb-4 py-3">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-6 col-lg-5">
+        <div class="position-relative">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input 
+            type="text" 
+            class="fluent-input ps-5" 
+            placeholder="Rechercher par nom, responsable, localisation..."
+            [(ngModel)]="searchText"
+            (ngModelChange)="onSearchChange()">
+        </div>
+      </div>
+      <div class="col-md-3 col-lg-3">
+        <select class="fluent-input" [(ngModel)]="selectedLocation" (ngModelChange)="applyFilters()">
+          <option value="">Toutes les localisations</option>
+          <option *ngFor="let gov of governorates" [value]="gov">{{ gov }}</option>
+        </select>
+      </div>
+      <div class="col-md-12 col-lg-4 text-md-end">
+        <span class="fs-7 text-muted fw-semibold">{{ filteredDepartments.length }} départements trouvés</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Departments Modern Table -->
+  <div class="fluent-card p-0 overflow-hidden">
+    <div class="table-responsive">
+      <table class="fluent-table mb-0">
+        <thead>
+          <tr>
+            <th>Nom du Département</th>
+            <th>Responsable</th>
+            <th>Effectif</th>
+            <th>Budget Annuel (TND)</th>
+            <th>Localisation</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let dept of filteredDepartments">
+            <td class="fw-semibold">{{ dept.name }}</td>
+            <td>{{ dept.managerName || 'Non assigné' }}</td>
+            <td>
+              <span class="fluent-badge primary">{{ dept.employeeCount || 0 }} employés</span>
+            </td>
+            <td class="fw-medium">{{ (dept.budget || 0) | number:'1.3-3' }}</td>
+            <td>{{ dept.location }}</td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1">
+                <button (click)="viewDepartment(dept)" class="action-btn text-primary" title="Voir">
+                  <span class="material-symbols-outlined fs-5">visibility</span>
+                </button>
+                <button (click)="openEditModal(dept)" class="action-btn text-warning" title="Modifier">
+                  <span class="material-symbols-outlined fs-5">edit</span>
+                </button>
+                <button (click)="deleteDepartment(dept.id)" class="action-btn text-danger" title="Supprimer">
+                  <span class="material-symbols-outlined fs-5">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredDepartments.length === 0">
+            <td colspan="6" class="text-center py-5 text-muted">
+              <span class="material-symbols-outlined fs-1 d-block mb-2 text-muted">search_off</span>
+              Aucun département correspondant aux critères de recherche.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal Form -->
+  <div class="fluent-modal-overlay" *ngIf="showFormModal">
+    <div class="fluent-modal-card">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5">{{ formMode === 'add' ? 'Ajouter un nouveau département' : 'Modifier le département' }}</h4>
+        <button (click)="closeFormModal()" class="border-0 bg-transparent text-muted cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form (ngSubmit)="saveDepartment()" class="modal-body" novalidate>
+        <div class="row g-3">
+          <!-- Nom du Département -->
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold">Nom du Département <span class="text-danger">*</span></label>
+            <input 
+              type="text" 
+              class="fluent-input" 
+              [class.is-invalid]="formErrors.name && (submitted || touchedFields.name)"
+              [(ngModel)]="currentFormDepartment.name" 
+              (ngModelChange)="onFieldChange('name')"
+              (blur)="markTouched('name')"
+              name="name" 
+              placeholder="ex: Informatique, RH...">
+            <div class="invalid-feedback d-block" *ngIf="formErrors.name && (submitted || touchedFields.name)">
+              {{ formErrors.name }}
+            </div>
+          </div>
+
+          <!-- Responsable -->
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold">Responsable</label>
+            <select 
+              class="fluent-input" 
+              [class.is-invalid]="formErrors.managerId && (submitted || touchedFields.managerId)"
+              [(ngModel)]="currentFormDepartment.managerId" 
+              (ngModelChange)="onFieldChange('managerId')"
+              (blur)="markTouched('managerId')"
+              name="managerId">
+              <option [ngValue]="null">Non assigné</option>
+              <option *ngFor="let mgr of availableManagers" [value]="mgr.id">
+                {{ mgr.firstName }} {{ mgr.lastName }}
+              </option>
+              <option *ngIf="currentManagerNonRole" [value]="currentManagerNonRole.id">
+                {{ currentManagerNonRole.firstName }} {{ currentManagerNonRole.lastName }} (rôle non manager)
+              </option>
+            </select>
+            <div class="invalid-feedback d-block" *ngIf="formErrors.managerId && (submitted || touchedFields.managerId)">
+              {{ formErrors.managerId }}
+            </div>
+          </div>
+
+          <!-- Localisation -->
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold">Localisation <span class="text-danger">*</span></label>
+            <select 
+              class="fluent-input" 
+              [class.is-invalid]="formErrors.location && (submitted || touchedFields.location)"
+              [(ngModel)]="currentFormDepartment.location" 
+              (ngModelChange)="onFieldChange('location')"
+              (blur)="markTouched('location')"
+              name="location">
+              <option value="">Sélectionner un gouvernorat...</option>
+              <option *ngFor="let gov of governorates" [value]="gov">{{ gov }}</option>
+            </select>
+            <div class="invalid-feedback d-block" *ngIf="formErrors.location && (submitted || touchedFields.location)">
+              {{ formErrors.location }}
+            </div>
+          </div>
+
+          <!-- Budget Annuel (TND) -->
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold">Budget Annuel (TND) <span class="text-danger">*</span></label>
+            <input 
+              type="number" 
+              class="fluent-input" 
+              [class.is-invalid]="formErrors.budget && (submitted || touchedFields.budget)"
+              [(ngModel)]="currentFormDepartment.budget" 
+              (ngModelChange)="onFieldChange('budget')"
+              (blur)="markTouched('budget')"
+              name="budget" 
+              placeholder="ex: 150000">
+            <div class="invalid-feedback d-block" *ngIf="formErrors.budget && (submitted || touchedFields.budget)">
+              {{ formErrors.budget }}
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label fs-7 fw-semibold mb-0">Description</label>
+              <span class="fs-8 text-muted" [class.text-danger]="(currentFormDepartment.description || '').length > 500">
+                {{ (currentFormDepartment.description || '').length }}/500
+              </span>
+            </div>
+            <textarea 
+              class="fluent-input" 
+              [class.is-invalid]="formErrors.description && (submitted || touchedFields.description)"
+              rows="3" 
+              [(ngModel)]="currentFormDepartment.description" 
+              (ngModelChange)="onFieldChange('description')"
+              (blur)="markTouched('description')"
+              name="description" 
+              placeholder="Description optionnelle du département..."></textarea>
+            <div class="invalid-feedback d-block" *ngIf="formErrors.description && (submitted || touchedFields.description)">
+              {{ formErrors.description }}
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer mt-4 pt-3 d-flex justify-content-end gap-2">
+          <button type="button" (click)="closeFormModal()" class="fluent-btn-secondary">Annuler</button>
+          <button type="submit" class="fluent-btn-primary" [disabled]="!isFormValid">Sauvegarder</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Detail Overlay Panel (Slide-Over) -->
+  <div class="fluent-modal-overlay" *ngIf="showDetailPanel" (click)="closeDetailPanel()">
+    <div class="detail-panel" (click)="$event.stopPropagation()">
+      <div class="detail-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5">Fiche Département</h4>
+        <button (click)="closeDetailPanel()" class="border-0 bg-transparent text-muted cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="detail-body mt-4" *ngIf="selectedDepartment">
+        <div class="text-center mb-4">
+          <div class="dept-icon-badge mb-2">
+            <span class="material-symbols-outlined fs-1">domain</span>
+          </div>
+          <h4 class="fw-bold mb-1">{{ selectedDepartment.name }}</h4>
+          <span class="fluent-badge primary">{{ selectedDepartment.employeeCount || 0 }} employés</span>
+        </div>
+
+        <div class="detail-info-list text-start mt-3">
+          <div class="detail-info-item">
+            <span class="info-label text-muted fs-7">Responsable</span>
+            <span class="info-value fw-medium">{{ selectedDepartment.managerName || 'Non assigné' }}</span>
+          </div>
+          <div class="detail-info-item">
+            <span class="info-label text-muted fs-7">Localisation</span>
+            <span class="info-value fw-medium">{{ selectedDepartment.location }}</span>
+          </div>
+          <div class="detail-info-item">
+            <span class="info-label text-muted fs-7">Budget Annuel (TND)</span>
+            <span class="info-value fw-semibold text-primary">{{ (selectedDepartment.budget || 0) | number:'1.3-3' }}</span>
+          </div>
+          <div class="detail-info-item" *ngIf="selectedDepartment.description">
+            <span class="info-label text-muted fs-7">Description</span>
+            <span class="info-value fw-medium">{{ selectedDepartment.description }}</span>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-top d-flex gap-2">
+          <button (click)="openEditModal(selectedDepartment); closeDetailPanel()" class="fluent-btn-primary w-100 justify-content-center">
+            <span class="material-symbols-outlined">edit</span>
+            Modifier
+          </button>
+          <button (click)="deleteDepartment(selectedDepartment.id); closeDetailPanel()" class="fluent-btn-secondary w-100 justify-content-center border-danger text-danger">
+            <span class="material-symbols-outlined">delete</span>
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

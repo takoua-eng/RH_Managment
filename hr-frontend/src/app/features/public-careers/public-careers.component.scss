@@ -1,0 +1,618 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+
+:host {
+  // Brand Color Palette & Design System Variables
+  --brand-primary: #2563eb;
+  --brand-primary-hover: #1d4ed8;
+  --brand-secondary: #7c3aed;
+  --brand-accent: #f472b6;
+  
+  --bg-page: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 45px -10px rgba(15, 23, 42, 0.12);
+  
+  --transition-fast: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+.public-careers-page {
+  background-color: var(--bg-page);
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--text-main);
+
+  h1, h2, h3, h4, h5, .hero-title {
+    font-family: var(--font-heading);
+  }
+
+  // --- UTILITY CLASSES ---
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .transition-hover {
+    transition: var(--transition-fast);
+  }
+
+  // --- MICRO-INTERACTIONS & ACCESSIBILITY ---
+  .form-control, .form-select, .btn, .btn-chip, .offer-card {
+    transition: var(--transition-fast);
+
+    &:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.4) !important;
+      outline-offset: 2px !important;
+    }
+  }
+
+  // --- HERO SECTION ---
+  .hero-section {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 35%, #312e81 70%, #4c1d95 100%);
+    padding-top: 3.5rem;
+    padding-bottom: 4.5rem;
+
+    // Decorative CSS Shapes (Pure CSS - No external images)
+    .hero-shape {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .hero-shape-1 {
+      top: -120px;
+      left: -100px;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(79, 70, 229, 0) 70%);
+      filter: blur(50px);
+      animation: floatOrb 12s ease-in-out infinite alternate;
+    }
+
+    .hero-shape-2 {
+      bottom: -100px;
+      right: -80px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(147, 51, 234, 0) 70%);
+      filter: blur(60px);
+      animation: floatOrb 15s ease-in-out infinite alternate-reverse;
+    }
+
+    .hero-shape-3 {
+      top: 25%;
+      right: 20%;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+      filter: blur(40px);
+    }
+
+    .hero-grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  }
+
+  // --- HERO CONTENT ---
+  .hero-content {
+    .hero-badge {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+
+      .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #10b981;
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulseDot 2s infinite;
+      }
+
+      .counter-number {
+        color: #60a5fa;
+        font-weight: 700;
+      }
+    }
+
+    .hero-title {
+      font-size: clamp(2.2rem, 4vw + 1rem, 3.5rem);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+
+      .gradient-text {
+        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    }
+
+    .hero-subtitle {
+      max-width: 680px;
+      font-size: 1.15rem;
+      line-height: 1.6;
+      color: #e2e8f0 !important;
+    }
+
+    .btn-hero-primary {
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+      color: #ffffff;
+      border: none;
+      transition: var(--transition-fast);
+
+      &:hover {
+        background: linear-gradient(135deg, var(--brand-primary-hover) 0%, #6d28d9 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(124, 58, 237, 0.4) !important;
+        color: #ffffff;
+      }
+    }
+  }
+
+  // --- FLOATING SEARCH CARD ---
+  .floating-search-container {
+    margin-top: 1.5rem;
+    margin-bottom: -3.5rem;
+    position: relative;
+    z-index: 10;
+  }
+
+  .floating-search-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-lg) !important;
+    transition: var(--transition-fast);
+
+    .form-label {
+      letter-spacing: 0.05em;
+      font-size: 0.75rem;
+    }
+
+    .form-control, .form-select, .input-group-text {
+      border-color: var(--border-color);
+      font-size: 0.95rem;
+
+      &:focus {
+        border-color: var(--brand-primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+    }
+
+    .input-group-text {
+      color: var(--text-muted);
+    }
+
+    // --- CONTRACT CHIPS ---
+    .btn-chip {
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      border-radius: var(--radius-full);
+      padding: 0.4rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: var(--transition-fast);
+      display: inline-flex;
+      align-items: center;
+
+      .chip-count {
+        font-size: 0.8em;
+        opacity: 0.75;
+        margin-left: 0.25rem;
+      }
+
+      &:hover {
+        background-color: #e2e8f0;
+        border-color: #94a3b8;
+        color: #1e293b;
+      }
+
+      &.active {
+        background: linear-gradient(135deg, var(--brand-primary) 0%, #4f46e5 100%);
+        border-color: transparent;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+
+        .chip-count {
+          opacity: 0.9;
+        }
+      }
+    }
+
+    // --- ACTIVE FILTERS BAR ---
+    .active-filters-bar {
+      .remove-icon {
+        cursor: pointer;
+        opacity: 0.75;
+        transition: opacity 150ms ease, transform 150ms ease;
+
+        &:hover {
+          opacity: 1;
+          transform: scale(1.15);
+        }
+      }
+    }
+  }
+
+  // --- OFFERS SECTION ---
+  .main-content-container {
+    padding-top: 5rem;
+    scroll-margin-top: 2rem;
+  }
+
+  // --- CONTRACT BADGE VARIANTS ---
+  .badge-contract-cdi {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+  .badge-contract-cdd {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+  .badge-contract-stage {
+    background-color: #ffedd5;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+  }
+  .badge-contract-alternance {
+    background-color: #f3e8ff;
+    color: #7e22ce;
+    border: 1px solid #e9d5ff;
+  }
+  .badge-contract-freelance {
+    background-color: #ccfbf1;
+    color: #0f766e;
+    border: 1px solid #99f6e4;
+  }
+  .badge-contract-default {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+  }
+
+  // --- BADGE NOUVEAU ---
+  .badge-new {
+    background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.725rem;
+    letter-spacing: 0.03em;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35);
+  }
+
+  // --- ELEVATED OFFER CARD & ACCESSIBILITY ---
+  .offer-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    transition: var(--transition-fast);
+    outline: none;
+
+    &:hover {
+      border-color: #3b82f6;
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg) !important;
+      
+      .offer-title {
+        color: var(--brand-primary) !important;
+      }
+
+      .hover-arrow {
+        transform: translateX(5px);
+        transition: transform 200ms ease;
+      }
+
+      .btn-apply {
+        background: linear-gradient(135deg, var(--brand-primary-hover) 0%, #4338ca 100%);
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4) !important;
+      }
+    }
+
+    .btn-apply {
+      background: linear-gradient(135deg, var(--brand-primary) 0%, #4f46e5 100%);
+      border: none;
+      color: #ffffff;
+      transition: var(--transition-fast);
+    }
+  }
+
+  // --- SECTION 1: POURQUOI NOUS REJOINDRE ---
+  .why-us-section {
+    .perk-card {
+      background-color: var(--bg-card);
+      transition: var(--transition-fast);
+      border-color: var(--border-color) !important;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md) !important;
+        border-color: #6366f1 !important;
+
+        .perk-icon-wrapper {
+          background-color: #4f46e5 !important;
+          color: #ffffff !important;
+        }
+      }
+
+      .perk-icon-wrapper {
+        width: 54px;
+        height: 54px;
+        transition: var(--transition-fast);
+      }
+    }
+  }
+
+  // --- SECTION 2: STATS BANNER ---
+  .stats-banner-section {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+
+    .stats-bg-gradient {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(99, 102, 241, 0.2) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.5;
+    }
+
+    .stat-number {
+      letter-spacing: -0.03em;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  // --- SECTION 3: PROCESSUS DE RECRUTEMENT ---
+  .recruitment-process-section {
+    .step-card {
+      background-color: var(--bg-card);
+      border-color: var(--border-color) !important;
+      transition: var(--transition-fast);
+
+      &:hover {
+        transform: translateY(-4px);
+        border-color: var(--brand-primary) !important;
+        box-shadow: var(--shadow-md) !important;
+      }
+    }
+
+    .step-number-badge {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+      font-size: 1.15rem;
+    }
+
+    .timeline-arrow {
+      position: absolute;
+      top: 40%;
+      right: -16px;
+      z-index: 5;
+      transform: translateY(-50%);
+
+      span {
+        font-size: 28px;
+      }
+    }
+  }
+
+  // --- SECTION 4: FAQ ACCORDION ---
+  .faq-section {
+    .faq-accordion {
+      border-color: var(--border-color) !important;
+
+      .faq-header {
+        cursor: pointer;
+        transition: background-color 200ms ease;
+
+        &:hover {
+          background-color: #f8fafc !important;
+        }
+      }
+
+      .rotate-180 {
+        transform: rotate(180deg);
+      }
+
+      .transition-transform {
+        transition: transform 200ms ease;
+      }
+    }
+  }
+
+  // --- SECTION 5: SPONTANEOUS CTA BANNER ---
+  .spontaneous-cta-section {
+    .cta-card {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+
+      .cta-bg-glow {
+        position: absolute;
+        top: -50%;
+        left: -20%;
+        width: 140%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(124, 58, 237, 0.35) 0%, transparent 60%);
+        pointer-events: none;
+      }
+
+      .hover-scale {
+        transition: var(--transition-fast);
+
+        &:hover {
+          transform: scale(1.04);
+          box-shadow: 0 12px 30px rgba(255, 255, 255, 0.25) !important;
+        }
+      }
+    }
+  }
+}
+
+// --- ANIMATIONS ---
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseDot {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes floatOrb {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(30px, -20px) scale(1.08);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-1 {
+  animation-delay: 0.1s;
+  opacity: 0;
+}
+
+.delay-2 {
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
+.delay-3 {
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+.delay-4 {
+  animation-delay: 0.4s;
+  opacity: 0;
+}
+
+// --- DARK MODE SUPPORT VIA PREFERS-COLOR-SCHEME ---
+@media (prefers-color-scheme: dark) {
+  :host {
+    --bg-page: #0f172a;
+    --bg-card: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+    --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 20px 45px -10px rgba(0, 0, 0, 0.6);
+  }
+
+  .public-careers-page {
+    background-color: var(--bg-page);
+    color: var(--text-main);
+
+    .floating-search-card,
+    .offer-card,
+    .why-us-section,
+    .faq-section,
+    .faq-item,
+    .step-card,
+    .perk-card {
+      background-color: var(--bg-card) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-main) !important;
+    }
+
+    .form-control,
+    .form-select,
+    .input-group-text {
+      background-color: #0f172a !important;
+      border-color: var(--border-color) !important;
+      color: #f8fafc !important;
+    }
+
+    .text-dark,
+    .offer-title,
+    h1, h2, h3, h4, h5 {
+      color: #f8fafc !important;
+    }
+
+    .btn-chip {
+      background-color: #334155;
+      border-color: #475569;
+      color: #cbd5e1;
+
+      &:hover {
+        background-color: #475569;
+        color: #ffffff;
+      }
+
+      &.active {
+        background: linear-gradient(135deg, var(--brand-primary) 0%, #4f46e5 100%);
+        color: #ffffff;
+      }
+    }
+
+    .faq-header:hover {
+      background-color: #334155 !important;
+    }
+  }
+}
+
+// --- RESPONSIVE ADJUSTMENTS ---
+@media (max-width: 991.98px) {
+  .public-careers-page {
+    .floating-search-container {
+      margin-bottom: -2rem;
+    }
+    .main-content-container {
+      padding-top: 3.5rem;
+    }
+  }
+}
+
+@media (max-width: 575.98px) {
+  .public-careers-page {
+    .hero-section {
+      padding-top: 2.5rem;
+      padding-bottom: 3.5rem;
+    }
+    .floating-search-container {
+      margin-top: 1rem;
+      margin-bottom: 0;
+      transform: none;
+    }
+    .main-content-container {
+      padding-top: 2rem;
+    }
+  }
+}

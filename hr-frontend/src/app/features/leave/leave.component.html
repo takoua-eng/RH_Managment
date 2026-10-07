@@ -3,7 +3,10 @@
   <div class="row mb-4 align-items-center">
     <div class="col-md-6">
       <h2 class="fw-bold mb-1">Gestion des Congés</h2>
-      <p class="text-muted mb-0">Visualisez le planning des absences et validez les demandes en attente.</p>
+      <p class="text-muted mb-0">
+        Consultez le planning des absences et le suivi des demandes.
+        Chaque demande est acceptée ou refusée par le manager de l'employé.
+      </p>
     </div>
     <div class="col-md-6 text-md-end mt-3 mt-md-0">
       <button (click)="openRequestModal()" class="fluent-btn-primary">
@@ -18,25 +21,37 @@
     <div class="col-6 col-md-3">
       <div class="fluent-card py-2 px-3">
         <span class="d-block text-muted fs-8 fw-semibold">Congés en attente</span>
-        <span class="fs-4 fw-bold text-warning">{{ pendingCount }}</span>
+        <span *ngIf="loadingStats; else pendingVal" class="skeleton-loader"></span>
+        <ng-template #pendingVal>
+          <span class="fs-4 fw-bold text-warning">{{ pendingCount }}</span>
+        </ng-template>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="fluent-card py-2 px-3">
         <span class="d-block text-muted fs-8 fw-semibold">Absents aujourd'hui</span>
-        <span class="fs-4 fw-bold text-primary">3</span>
+        <span *ngIf="loadingStats; else absentVal" class="skeleton-loader"></span>
+        <ng-template #absentVal>
+          <span class="fs-4 fw-bold text-primary">{{ absentToday }}</span>
+        </ng-template>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="fluent-card py-2 px-3">
         <span class="d-block text-muted fs-8 fw-semibold">Approuvés ce mois</span>
-        <span class="fs-4 fw-bold text-success">14</span>
+        <span *ngIf="loadingStats; else approvedVal" class="skeleton-loader"></span>
+        <ng-template #approvedVal>
+          <span class="fs-4 fw-bold text-success">{{ approvedThisMonth }}</span>
+        </ng-template>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="fluent-card py-2 px-3">
         <span class="d-block text-muted fs-8 fw-semibold">Taux de présence</span>
-        <span class="fs-4 fw-bold text-dark">96.8%</span>
+        <span *ngIf="loadingStats; else presenceVal" class="skeleton-loader"></span>
+        <ng-template #presenceVal>
+          <span class="fs-4 fw-bold text-dark">{{ presenceRate !== null ? presenceRate + '%' : '—' }}</span>
+        </ng-template>
       </div>
     </div>
   </div>
@@ -48,25 +63,34 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-bold mb-0 fs-6">Calendrier des absences</h5>
           <div class="d-flex align-items-center gap-2">
-            <span class="fw-semibold text-primary fs-7">Juin 2026</span>
+            <button type="button" (click)="previousMonth()" class="action-btn" title="Mois précédent" style="border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <span class="material-symbols-outlined fs-6">chevron_left</span>
+            </button>
+            <span class="fw-semibold text-primary fs-7" style="min-width: 110px; text-align: center; display: inline-block;">
+              {{ getMonthName(currentMonth) }} {{ currentYear }}
+            </span>
+            <button type="button" (click)="nextMonth()" class="action-btn" title="Mois suivant" style="border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <span class="material-symbols-outlined fs-6">chevron_right</span>
+            </button>
           </div>
         </div>
-        
+
         <div class="calendar-grid">
           <!-- Days Header -->
           <div class="calendar-header-day text-uppercase" *ngFor="let day of weekDays">{{ day }}</div>
-          
+
           <!-- Days Cells -->
-          <div class="calendar-cell" 
-               *ngFor="let cell of calendarDays" 
+          <div class="calendar-cell"
+               *ngFor="let cell of calendarDays"
                [class.empty]="!cell.dayNumber"
-               [class.today]="cell.dayNumber === 17">
+               [class.today]="cell.dateStr === todayStr">
             <span class="day-num" *ngIf="cell.dayNumber">{{ cell.dayNumber }}</span>
             <div class="cell-leaves mt-1" *ngIf="cell.leaves.length > 0">
-              <div class="leave-dot" 
-                   *ngFor="let l of cell.leaves" 
-                   [ngClass]="getLeaveTypeClass(l.type)" 
-                   [title]="l.name + ' (' + l.type + ')'">
+              <div class="leave-dot"
+                   *ngFor="let l of cell.leaves"
+                   [ngClass]="getLeaveTypeClass(l.type)"
+                   [title]="l.name + ' (' + getLeaveTypeLabel(l.type) + ') - Clic pour détails'"
+                   (click)="openLeaveDetails(l, $event)">
                 {{ l.name.split(' ')[0] }}
               </div>
             </div>
@@ -76,25 +100,29 @@
         <!-- Legend -->
         <div class="d-flex flex-wrap gap-3 mt-3 justify-content-center border-top pt-3 fs-8">
           <span class="d-flex align-items-center gap-1">
-            <span class="legend-dot bg-primary"></span> Congé Payé
+            <span class="legend-dot bg-primary"></span> Congé annuel
           </span>
           <span class="d-flex align-items-center gap-1">
             <span class="legend-dot bg-danger"></span> Maladie
           </span>
           <span class="d-flex align-items-center gap-1">
-            <span class="legend-dot bg-warning"></span> RTT
+            <span class="legend-dot bg-warning"></span> Autre
           </span>
         </div>
       </div>
     </div>
 
-    <!-- Requests Validation Table (Right Side) -->
+    <!-- Requests Table (Right Side) : consultation -->
     <div class="col-lg-6">
       <div class="fluent-card h-100 p-0 overflow-hidden d-flex flex-column">
-        <div class="p-3 border-bottom bg-light-subtle">
+        <div class="p-3 border-bottom bg-light-subtle d-flex justify-content-between align-items-center">
           <h5 class="fw-bold mb-0 fs-6">Demandes de congés</h5>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary btn-sm fs-8 py-0 px-2" [class.active]="filterStatus === 'ALL'" (click)="setFilterStatus('ALL')">Toutes</button>
+            <button class="btn btn-outline-secondary btn-sm fs-8 py-0 px-2" [class.active]="filterStatus === 'PENDING'" (click)="setFilterStatus('PENDING')">En attente</button>
+          </div>
         </div>
-        
+
         <div class="table-responsive flex-grow-1">
           <table class="fluent-table">
             <thead>
@@ -106,43 +134,129 @@
                 <th class="text-end">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr *ngFor="let req of leaveRequests">
+            <tbody *ngIf="leaveRequests$ | async as leaves; else loadingTable">
+              <tr *ngFor="let req of leaves">
                 <td class="fw-semibold">{{ req.employeeName }}</td>
                 <td>
                   <span class="d-block fs-8">{{ req.startDate }}</span>
                   <span class="d-block fs-8 text-muted">au {{ req.endDate }}</span>
                 </td>
                 <td>
-                  <span class="fluent-badge" [ngClass]="getLeaveBadgeClass(req.type)">{{ req.type }}</span>
+                  <span class="fluent-badge" [ngClass]="getLeaveBadgeClass(req.type)">{{ getLeaveTypeLabel(req.type) }}</span>
                 </td>
                 <td>
-                  <span class="fluent-badge" 
-                        [ngClass]="{
-                          'success': req.status === 'Approuvé',
-                          'warning': req.status === 'En attente',
-                          'error': req.status === 'Refusé'
-                        }">
-                    {{ req.status }}
+                  <span class="fluent-badge" [ngClass]="getStatusBadgeClass(req.status)">
+                    {{ getStatusLabel(req.status) }}
                   </span>
                 </td>
                 <td class="text-end">
-                  <div class="d-inline-flex gap-1" *ngIf="req.status === 'En attente'">
-                    <button (click)="approve(req.id)" class="action-btn text-success" title="Approuver">
-                      <span class="material-symbols-outlined fs-5">done</span>
-                    </button>
-                    <button (click)="reject(req.id)" class="action-btn text-danger" title="Refuser">
-                      <span class="material-symbols-outlined fs-5">close</span>
+                  <div class="d-inline-flex gap-1 align-items-center">
+                    <button (click)="openLeaveDetails(req, $event)" class="action-btn text-info" title="Consulter les détails">
+                      <span class="material-symbols-outlined fs-5">visibility</span>
                     </button>
                   </div>
-                  <span class="text-muted fs-8" *ngIf="req.status !== 'En attente'">Traité</span>
                 </td>
               </tr>
-              <tr *ngIf="leaveRequests.length === 0">
-                <td colspan="5" class="text-center py-5 text-muted">Aucune demande soumise.</td>
+              <tr *ngIf="leaves.length === 0">
+                <td colspan="5" class="text-center py-5 text-muted">Aucune demande trouvée.</td>
               </tr>
             </tbody>
+            <ng-template #loadingTable>
+              <tbody>
+                <tr>
+                  <td colspan="5" class="text-center py-5">
+                    <span class="skeleton-loader" style="width: 100%; height: 35px; margin: 4px 0;"></span>
+                    <span class="skeleton-loader" style="width: 100%; height: 35px; margin: 4px 0;"></span>
+                    <span class="skeleton-loader" style="width: 100%; height: 35px; margin: 4px 0;"></span>
+                  </td>
+                </tr>
+              </tbody>
+            </ng-template>
           </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leave Details Modal -->
+  <div class="fluent-modal-overlay" *ngIf="showDetailsModal">
+    <div class="fluent-modal-card" style="max-width: 480px;">
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h4 class="fw-bold mb-0 fs-5">Détails du congé</h4>
+        <button (click)="showDetailsModal = false" class="border-0 bg-transparent text-muted cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body" *ngIf="selectedLeaveDetails">
+        <div class="mb-3">
+          <span class="text-muted d-block fs-8 fw-semibold text-uppercase">Employé</span>
+          <span class="fw-bold fs-6 text-dark">{{ selectedLeaveDetails.employeeName }}</span>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <span class="text-muted d-block fs-8 fw-semibold text-uppercase">Type de congé</span>
+            <span class="fluent-badge mt-1" [ngClass]="getLeaveBadgeClass(selectedLeaveDetails.type)">
+              {{ getLeaveTypeLabel(selectedLeaveDetails.type) }}
+            </span>
+          </div>
+          <div class="col-6">
+            <span class="text-muted d-block fs-8 fw-semibold text-uppercase">Statut</span>
+            <span class="fluent-badge mt-1" [ngClass]="getStatusBadgeClass(selectedLeaveDetails.status || '')">
+              {{ getStatusLabel(selectedLeaveDetails.status || '') }}
+            </span>
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <span class="text-muted d-block fs-8 fw-semibold text-uppercase">Date de début</span>
+            <span class="fw-semibold text-dark fs-7">{{ selectedLeaveDetails.startDate }}</span>
+          </div>
+          <div class="col-6">
+            <span class="text-muted d-block fs-8 fw-semibold text-uppercase">Date de fin</span>
+            <span class="fw-semibold text-dark fs-7">{{ selectedLeaveDetails.endDate }}</span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <span class="text-muted d-block fs-8 fw-semibold text-uppercase">Nombre de jours</span>
+          <span class="fw-semibold text-dark fs-7">{{ calculateDaysCount(selectedLeaveDetails) }} jour(s)</span>
+        </div>
+        <div class="mb-3" *ngIf="selectedLeaveDetails.reason">
+          <span class="text-muted d-block fs-8 fw-semibold text-uppercase">Motif de la demande</span>
+          <div class="p-2 bg-light rounded text-dark fs-7 mt-1 border">{{ selectedLeaveDetails.reason }}</div>
+        </div>
+
+        <!-- Décision du manager -->
+        <div class="mb-3" *ngIf="$any(selectedLeaveDetails).decidedAt">
+          <span class="text-muted d-block fs-8 fw-semibold text-uppercase">Décision du manager</span>
+          <span class="fw-semibold text-dark fs-7">
+            {{ getStatusLabel(selectedLeaveDetails.status || '') }} le {{ $any(selectedLeaveDetails).decidedAt | date:'dd/MM/yyyy à HH:mm' }}
+          </span>
+        </div>
+        <div class="mb-3" *ngIf="$any(selectedLeaveDetails).decisionComment">
+          <span class="text-muted d-block fs-8 fw-semibold text-uppercase">
+            {{ selectedLeaveDetails.status === 'REJECTED' ? 'Motif du refus' : 'Commentaire du manager' }}
+          </span>
+          <div class="p-2 bg-light rounded text-dark fs-7 mt-1 border">{{ $any(selectedLeaveDetails).decisionComment }}</div>
+        </div>
+
+        <!-- Demande en attente : décision par le manager (ou l'admin si l'employé n'a pas de manager) -->
+        <div class="mb-3 p-2 rounded border" *ngIf="selectedLeaveDetails.status === 'PENDING' && selectedLeaveDetails.id">
+          <span class="d-block fs-8 text-muted mb-2">
+            Cette demande attend la décision du manager de l'employé.
+            Si l'employé n'a pas de manager, un administrateur peut décider :
+          </span>
+          <div class="d-flex gap-2">
+            <button type="button" class="fluent-btn-secondary" (click)="showDetailsModal = false; reject(selectedLeaveDetails.id!)">
+              <span class="material-symbols-outlined fs-6">close</span> Refuser
+            </button>
+            <button type="button" class="fluent-btn-primary" (click)="showDetailsModal = false; approve(selectedLeaveDetails.id!)">
+              <span class="material-symbols-outlined fs-6">check</span> Approuver
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-footer mt-4 pt-3 d-flex justify-content-end">
+          <button type="button" (click)="showDetailsModal = false" class="fluent-btn-primary">Fermer</button>
         </div>
       </div>
     </div>
@@ -160,7 +274,11 @@
       <form (ngSubmit)="submitRequest()" class="modal-body">
         <div class="mb-3">
           <label class="form-label fs-7 fw-semibold">Employé</label>
-          <input type="text" class="fluent-input" [(ngModel)]="newRequest.employeeName" name="employeeName" placeholder="Ex: Jean Dupont" required>
+          <select class="fluent-input" [(ngModel)]="selectedEmployeeId" name="employeeId" required>
+            <option *ngFor="let emp of employees" [ngValue]="emp.id">
+              {{ emp.firstName }} {{ emp.lastName }}
+            </option>
+          </select>
         </div>
         <div class="row g-2 mb-3">
           <div class="col-6">
@@ -175,16 +293,16 @@
         <div class="mb-3">
           <label class="form-label fs-7 fw-semibold">Type de congé</label>
           <select class="fluent-input" [(ngModel)]="newRequest.type" name="type">
-            <option value="Payé">Congé Payé</option>
+            <option value="Payé">Congé annuel</option>
             <option value="Maladie">Maladie</option>
-            <option value="RTT">RTT</option>
-            <option value="Sans solde">Sans solde</option>
+            <option value="RTT">Autre</option>
           </select>
         </div>
         <div class="mb-3">
           <label class="form-label fs-7 fw-semibold">Motif (Optionnel)</label>
           <textarea class="fluent-input" [(ngModel)]="newRequest.reason" name="reason" rows="2" placeholder="Motif de l'absence..."></textarea>
         </div>
+        <p class="fs-8 text-muted mb-0">La demande sera envoyée au manager de l'employé, qui l'acceptera ou la refusera.</p>
         <div class="modal-footer mt-4 pt-3 d-flex justify-content-end gap-2">
           <button type="button" (click)="showRequestModal = false" class="fluent-btn-secondary">Annuler</button>
           <button type="submit" class="fluent-btn-primary">Soumettre</button>

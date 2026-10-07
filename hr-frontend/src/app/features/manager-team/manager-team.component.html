@@ -1,0 +1,237 @@
+<div class="team-page py-4">
+
+  <!-- ================================================================ -->
+  <!-- HEADER & RECHERCHE                                               -->
+  <!-- ================================================================ -->
+  <div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="page-title mb-1 fw-bold fs-4 text-dark d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined title-icon text-warning fs-3">group</span>
+        Gestion d'Équipe
+      </h1>
+      <p class="page-subtitle text-muted mb-0 fs-7">
+        {{ totalEmployees }} employé{{ totalEmployees !== 1 ? 's' : '' }} rattaché{{ totalEmployees !== 1 ? 's' : '' }} à votre responsabilité.
+      </p>
+    </div>
+
+    <!-- Barre de recherche -->
+    <div class="search-wrapper position-relative">
+      <span class="material-symbols-outlined search-icon position-absolute top-50 translate-middle-y ms-3 text-muted">search</span>
+      <input
+        type="text"
+        class="form-control ps-5 pe-5 py-2 rounded-pill shadow-sm"
+        placeholder="Rechercher un membre..."
+        [(ngModel)]="searchQuery"
+        (input)="onSearch()"
+        id="team-search-input"
+      />
+      <button
+        *ngIf="searchQuery"
+        (click)="clearSearch()"
+        class="btn btn-link text-muted position-absolute top-50 translate-middle-y end-0 me-2 p-0 border-0"
+        title="Effacer">
+        <span class="material-symbols-outlined fs-6">close</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- CARTES DE COMPTEURS RÉELS                                         -->
+  <!-- ================================================================ -->
+  <div class="row g-3 mb-4" *ngIf="!loading && !error">
+    <div class="col-6 col-md-4">
+      <div class="kpi-card border-start border-4 border-primary p-3 bg-white rounded shadow-sm">
+        <div class="text-muted fs-8 text-uppercase fw-semibold mb-1">Total Équipe</div>
+        <div class="fs-3 fw-bold text-dark">{{ totalEmployees }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="kpi-card border-start border-4 border-success p-3 bg-white rounded shadow-sm">
+        <div class="text-muted fs-8 text-uppercase fw-semibold mb-1">Employés Actifs</div>
+        <div class="fs-3 fw-bold text-dark">{{ activeEmployeesCount }}</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="kpi-card border-start border-4 border-warning p-3 bg-white rounded shadow-sm">
+        <div class="text-muted fs-8 text-uppercase fw-semibold mb-1">Absents aujourd'hui</div>
+        <div class="fs-3 fw-bold text-dark">{{ absentTodayCount }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- ÉTAT CHARGEMENT                                                   -->
+  <!-- ================================================================ -->
+  <div *ngIf="loading" class="loading-state py-5 text-center bg-white rounded shadow-sm my-3">
+    <div class="spinner-border text-warning mb-3" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="text-muted fs-7 mb-0">Chargement des membres de votre équipe depuis la base de données...</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- ÉTAT ERREUR AVEC BOUTON RÉESSAYER                                -->
+  <!-- ================================================================ -->
+  <div *ngIf="!loading && error" class="error-state p-4 bg-white rounded border border-danger-subtle shadow-sm my-3 text-center">
+    <div class="d-flex align-items-center justify-content-center gap-2 text-danger mb-2">
+      <span class="material-symbols-outlined fs-4">error_outline</span>
+      <span class="fw-semibold fs-6">{{ errorMessage || 'Erreur lors du chargement de l\'équipe.' }}</span>
+    </div>
+    <button (click)="loadTeam()" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 rounded-pill px-4">
+      <span class="material-symbols-outlined fs-6">refresh</span>
+      Réessayer
+    </button>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- ÉTAT VIDE (AUCUN EMPLOYÉ)                                         -->
+  <!-- ================================================================ -->
+  <div *ngIf="!loading && !error && allMembers.length === 0" class="empty-state text-center py-5 bg-white rounded shadow-sm my-3">
+    <div class="empty-icon-wrapper mx-auto mb-3 text-muted">
+      <span class="material-symbols-outlined fs-1">group_off</span>
+    </div>
+    <h4 class="fw-bold mb-2 text-dark">Aucun employé dans votre équipe.</h4>
+    <p class="text-muted fs-7 mb-0">Vous n'avez pas encore d'employés rattachés dans la base de données.</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- AUCUN RÉSULTAT POUR LA RECHERCHE                                  -->
+  <!-- ================================================================ -->
+  <div *ngIf="!loading && !error && allMembers.length > 0 && filteredMembers.length === 0" class="empty-state text-center py-5 bg-white rounded shadow-sm my-3">
+    <span class="material-symbols-outlined fs-1 text-muted mb-2">search_off</span>
+    <h5 class="fw-bold text-dark mb-2">Aucun résultat trouvé</h5>
+    <p class="text-muted fs-7 mb-3">Aucun membre ne correspond à "{{ searchQuery }}".</p>
+    <button (click)="clearSearch()" class="btn btn-sm btn-outline-warning rounded-pill px-4">
+      Effacer la recherche
+    </button>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- GRILLE DES MEMBRES                                                -->
+  <!-- ================================================================ -->
+  <div *ngIf="!loading && !error && pagedMembers.length > 0">
+    <div class="members-grid mb-4">
+      <div
+        *ngFor="let member of pagedMembers"
+        class="member-card cursor-pointer"
+        (click)="viewDetail(member.id)"
+        [id]="'member-card-' + member.id">
+
+        <!-- Bandeau statut -->
+        <div class="status-strip" [ngClass]="getStatusClass(member)"></div>
+
+        <!-- Photo ou Initiales -->
+        <div class="card-avatar">
+          <img
+            *ngIf="member.photo || member.photoUrl"
+            [src]="member.photo || member.photoUrl || getPhotoUrl(member.id)"
+            [alt]="member.firstName + ' ' + member.lastName"
+            class="avatar-img"
+            (error)="onImgError($event)" />
+          <div *ngIf="!member.photo && !member.photoUrl" class="avatar-initials">
+            {{ getInitials(member) }}
+          </div>
+          <span class="status-badge-dot" [ngClass]="getStatusClass(member)" [title]="getStatusLabel(member)"></span>
+        </div>
+
+        <!-- Infos -->
+        <div class="card-body text-center">
+          <h3 class="member-name text-truncate fw-bold fs-6 text-dark mb-1">
+            {{ member.firstName }} {{ member.lastName }}
+          </h3>
+          <p class="member-position text-muted fs-8 text-truncate mb-2">{{ member.position || 'Poste non renseigné' }}</p>
+
+          <div class="member-meta d-flex justify-content-center flex-wrap gap-2">
+            <span class="meta-chip dept-chip badge bg-light text-secondary border fs-8" *ngIf="member.departmentName || member.department">
+              <span class="material-symbols-outlined me-1" style="font-size:0.85rem">corporate_fare</span>
+              {{ member.departmentName || member.department }}
+            </span>
+            <span class="meta-chip email-chip badge bg-light text-secondary border fs-8" *ngIf="member.email">
+              <span class="material-symbols-outlined me-1" style="font-size:0.85rem">mail</span>
+              {{ member.email }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Footer card -->
+        <div class="card-footer-info d-flex align-items-center justify-content-between p-3 border-top bg-light-subtle">
+          <span class="hire-date text-muted fs-8" *ngIf="member.hireDate">
+            Depuis {{ formatDate(member.hireDate) }}
+          </span>
+          <span class="status-label badge" [ngClass]="getStatusClass(member)">
+            {{ getStatusLabel(member) }}
+          </span>
+        </div>
+
+        <div class="card-hover-overlay">
+          <span class="material-symbols-outlined me-1">open_in_new</span>
+          Voir le profil
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- PAGINATION                                                        -->
+    <!-- ================================================================ -->
+    <div class="pagination-bar d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 bg-white rounded shadow-sm" *ngIf="totalPages > 1">
+      <span class="pagination-info text-muted fs-8">
+        Page {{ currentPage + 1 }} sur {{ totalPages }}
+        ({{ filteredMembers.length }} membres)
+      </span>
+
+      <div class="d-flex align-items-center gap-2">
+        <button
+          class="btn btn-sm btn-outline-secondary p-1"
+          (click)="goToPage(0)"
+          [disabled]="currentPage === 0"
+          title="Première page">
+          <span class="material-symbols-outlined fs-6">first_page</span>
+        </button>
+        <button
+          class="btn btn-sm btn-outline-secondary p-1"
+          (click)="goToPage(currentPage - 1)"
+          [disabled]="currentPage === 0"
+          title="Page précédente">
+          <span class="material-symbols-outlined fs-6">chevron_left</span>
+        </button>
+
+        <span class="page-numbers d-flex gap-1">
+          <button
+            *ngFor="let p of getPageRange()"
+            class="btn btn-sm"
+            [class.btn-warning]="p === currentPage"
+            [class.btn-outline-secondary]="p !== currentPage"
+            (click)="goToPage(p)">
+            {{ p + 1 }}
+          </button>
+        </span>
+
+        <button
+          class="btn btn-sm btn-outline-secondary p-1"
+          (click)="goToPage(currentPage + 1)"
+          [disabled]="currentPage >= totalPages - 1"
+          title="Page suivante">
+          <span class="material-symbols-outlined fs-6">chevron_right</span>
+        </button>
+        <button
+          class="btn btn-sm btn-outline-secondary p-1"
+          (click)="goToPage(totalPages - 1)"
+          [disabled]="currentPage >= totalPages - 1"
+          title="Dernière page">
+          <span class="material-symbols-outlined fs-6">last_page</span>
+        </button>
+      </div>
+
+      <!-- Taille de page -->
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-muted fs-8">Par page :</span>
+        <select class="form-select form-select-sm py-1 px-2" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+          <option [value]="6">6</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+</div>

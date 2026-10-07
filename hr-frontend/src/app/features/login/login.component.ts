@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { EmployeeDashboardService } from '../../core/services/employee-dashboard.service';
 
 @Component({
   selector: 'app-login',
@@ -18,21 +19,24 @@ export class LoginComponent {
   rememberMe = true;
   forgotEmail = '';
   loading = false;
+    showPassword = false;
+  currentYear = new Date().getFullYear();
 
   alertMsg = '';
   alertClass = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
-loginWithKeycloak() {
-  this.authService.loginWithKeycloak();
-}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private employeeDashboardService: EmployeeDashboardService,
+  ) {}
 
-  fillDemoCredentials() {
-    this.email = 'admin@corp.com';
-    this.password = 'password123';
-  }
+
 
   handleLogin() {
+
+            // Préchargement du tableau de bord employé pendant la redirection
+        this.employeeDashboardService.prefetch();
     if (!this.email || !this.password) {
       this.showAlert('Veuillez remplir tous les champs.', 'alert-danger');
       return;
@@ -40,12 +44,12 @@ loginWithKeycloak() {
 
     this.loading = true;
     this.alertMsg = '';
-    
+
     this.authService.login(this.email, this.password).subscribe({
       next: (success) => {
         this.loading = false;
         if (success) {
-          this.router.navigate(['/dashboard']);
+          this.navigateByRole();
         } else {
           this.showAlert('Identifiants invalides.', 'alert-danger');
         }
@@ -85,5 +89,21 @@ loginWithKeycloak() {
   private showAlert(msg: string, className: string) {
     this.alertMsg = msg;
     this.alertClass = className;
+  }
+
+  /**
+   * Redirige vers le bon dashboard selon le rôle de l'utilisateur.
+   * MANAGER  → /manager/dashboard
+   * EMPLOYEE → /dashboard/employee
+   * Autres   → /dashboard
+   */
+  private navigateByRole(): void {
+    if (this.authService.isManager() && !this.authService.isAdmin() && !this.authService.isRH()) {
+      this.router.navigate(['/manager/dashboard']);
+    } else if (!this.authService.isAdmin() && !this.authService.isRH() && !this.authService.isManager()) {
+      this.router.navigate(['/dashboard/employee']);
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 }

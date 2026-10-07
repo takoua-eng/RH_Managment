@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+pymupdf
+python-docx
+langdetect
+sentence-transformers
+scikit-learn
+xgboost
+joblib
+pandas
+pytesseract
+pillow
+pytest
+httpx

@@ -1,0 +1,255 @@
+<div class="admin-trainings-page">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Gestion des Formations</h2>
+      <p class="text-muted mb-0">Ajoutez, modifiez ou supprimez les formations du catalogue.</p>
+    </div>
+    <button class="fluent-btn-primary d-flex align-items-center gap-2" (click)="openAddModal()">
+      <span class="material-symbols-outlined fs-5">add</span>
+      Nouvelle Formation
+    </button>
+  </div>
+
+  <div class="alert alert-success alert-dismissible fade show" role="alert" *ngIf="successMessage">
+    {{ successMessage }}
+    <button type="button" class="btn-close" (click)="clearMessages()" aria-label="Close"></button>
+  </div>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert" *ngIf="errorMessage">
+    {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="clearMessages()" aria-label="Close"></button>
+  </div>
+
+  <div class="text-center py-5" *ngIf="loading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4" *ngIf="!loading">
+    <div class="col-md-3">
+      <label class="form-label fs-8 text-muted mb-1">Recherche</label>
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white"><span class="material-symbols-outlined fs-6">search</span></span>
+        <input type="text" class="form-control border-start-0 ps-0" placeholder="Titre, formateur..." [(ngModel)]="searchQuery">
+      </div>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label fs-8 text-muted mb-1">Catégorie</label>
+      <select class="form-select form-select-sm" [(ngModel)]="categoryFilter">
+        <option value="">Toutes</option>
+        <option value="Développement">Développement</option>
+        <option value="DevOps">DevOps</option>
+        <option value="Management">Management</option>
+        <option value="Soft Skills">Soft Skills</option>
+        <option value="Design">Design</option>
+        <option value="Data">Data</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label fs-8 text-muted mb-1">Niveau</label>
+      <select class="form-select form-select-sm" [(ngModel)]="levelFilter">
+        <option value="">Tous</option>
+        <option value="Débutant">Débutant</option>
+        <option value="Intermédiaire">Intermédiaire</option>
+        <option value="Avancé">Avancé</option>
+        <option value="Expert">Expert</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label fs-8 text-muted mb-1">Statut</label>
+      <select class="form-select form-select-sm" [(ngModel)]="statusFilter">
+        <option value="">Tous</option>
+        <option value="Disponible">Disponible</option>
+        <option value="En cours">En cours</option>
+        <option value="Terminée">Terminée</option>
+        <option value="Annulée">Annulée</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="fluent-card shadow-sm border" *ngIf="!loading">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light text-muted fs-8">
+          <tr>
+            <th>TITRE</th>
+            <th>CATÉGORIE & NIVEAU</th>
+            <th>FORMATEUR</th>
+            <th>DATES & DURÉE</th>
+            <th>PLACES</th>
+            <th>STATUT</th>
+            <th class="text-end">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let training of filteredTrainings">
+            <td>
+              <div class="fw-semibold text-dark">{{ training.title }}</div>
+              <div class="text-muted fs-8 text-truncate" style="max-width: 200px;" [title]="training.description">{{ training.description }}</div>
+            </td>
+            <td>
+              <div><span class="fluent-badge bg-light text-dark border">{{ training.category || 'N/A' }}</span></div>
+              <div class="mt-1"><span class="fluent-badge bg-light text-primary border">{{ training.level || 'N/A' }}</span></div>
+            </td>
+            <td class="text-muted fs-7">{{ training.trainer || 'N/A' }}</td>
+            <td>
+              <div class="fs-7"><span class="material-symbols-outlined fs-8 align-middle">calendar_today</span> {{ training.startDate }} <span *ngIf="training.endDate">au {{ training.endDate }}</span></div>
+              <div class="text-muted fs-8"><span class="material-symbols-outlined fs-8 align-middle">schedule</span> {{ training.duration }} ({{ training.mode || training.location || 'N/A' }})</div>
+            </td>
+            <td class="fs-7">
+              <span [class.text-danger]="training.availableSeats === 0">{{ training.availableSeats !== undefined ? training.availableSeats : 'N/A' }}</span>
+            </td>
+            <td>
+              <span class="fluent-badge" [ngClass]="{
+                'bg-success': training.status === 'Disponible',
+                'bg-warning text-dark': training.status === 'En cours',
+                'bg-secondary': training.status === 'Terminée',
+                'bg-danger': training.status === 'Annulée'
+              }">{{ training.status || 'Disponible' }}</span>
+            </td>
+            <td class="text-end">
+              <div class="d-flex gap-2 justify-content-end">
+                <button class="btn btn-sm btn-light border text-info" title="Voir les détails" (click)="openDetailsModal(training)">
+                  <span class="material-symbols-outlined fs-6">visibility</span>
+                </button>
+                <button class="btn btn-sm btn-light border text-primary" title="Modifier" (click)="openEditModal(training)">
+                  <span class="material-symbols-outlined fs-6">edit</span>
+                </button>
+                <button class="btn btn-sm btn-light border text-danger" title="Supprimer" (click)="deleteTraining(training.id)">
+                  <span class="material-symbols-outlined fs-6">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredTrainings.length === 0">
+            <td colspan="7" class="text-center py-4 text-muted">
+              Aucune formation trouvée.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ajout/Modification -->
+<div class="fluent-modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="fluent-modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header d-flex justify-content-between align-items-center">
+      <h4 class="fw-bold mb-0 fs-5 text-dark">{{ isEditMode ? 'Modifier la formation' : 'Nouvelle formation' }}</h4>
+      <button (click)="closeModal()" class="border-0 bg-transparent text-muted cursor-pointer" type="button">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form #trainingForm="ngForm">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold text-dark">Titre de la formation *</label>
+            <input type="text" class="form-control" name="title" #titleCtrl="ngModel" [(ngModel)]="selectedTraining.title" [class.is-invalid]="(titleCtrl.invalid && (titleCtrl.touched || submitted))" required placeholder="Ex: Angular 20 & RxJS">
+            <div class="invalid-feedback" *ngIf="titleCtrl.invalid && (titleCtrl.touched || submitted)">
+              Le titre de la formation est obligatoire.
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold text-dark">Catégorie *</label>
+            <select class="form-select" name="category" #catCtrl="ngModel" [(ngModel)]="selectedTraining.category" [class.is-invalid]="(catCtrl.invalid && (catCtrl.touched || submitted))" required>
+              <option value="" disabled selected>Sélectionner une catégorie</option>
+              <option value="Développement">Développement</option>
+              <option value="DevOps">DevOps</option>
+              <option value="Management">Management</option>
+              <option value="Soft Skills">Soft Skills</option>
+              <option value="Design">Design</option>
+              <option value="Data">Data</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="catCtrl.invalid && (catCtrl.touched || submitted)">
+              Veuillez choisir une catégorie.
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold text-dark">Niveau *</label>
+            <select class="form-select" name="level" #levelCtrl="ngModel" [(ngModel)]="selectedTraining.level" [class.is-invalid]="(levelCtrl.invalid && (levelCtrl.touched || submitted))" required>
+              <option value="Débutant">Débutant</option>
+              <option value="Intermédiaire">Intermédiaire</option>
+              <option value="Avancé">Avancé</option>
+              <option value="Expert">Expert</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="levelCtrl.invalid && (levelCtrl.touched || submitted)">
+              Veuillez choisir un niveau.
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-7 fw-semibold text-dark">Formateur *</label>
+            <input type="text" class="form-control" name="trainer" #trainerCtrl="ngModel" [(ngModel)]="selectedTraining.trainer" [class.is-invalid]="(trainerCtrl.invalid && (trainerCtrl.touched || submitted))" required placeholder="Ex: Thomas Rousseau">
+            <div class="invalid-feedback" *ngIf="trainerCtrl.invalid && (trainerCtrl.touched || submitted)">
+              Le nom du formateur est obligatoire.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fs-7 fw-semibold text-dark">Date de début *</label>
+            <input type="date" class="form-control" name="startDate" #startCtrl="ngModel" [(ngModel)]="selectedTraining.startDate" (change)="calculateDuration()" [class.is-invalid]="(startCtrl.invalid && (startCtrl.touched || submitted)) || isDateRangeInvalid()" required>
+            <div class="invalid-feedback" *ngIf="startCtrl.invalid && (startCtrl.touched || submitted)">
+              La date de début est obligatoire.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fs-7 fw-semibold text-dark">Date de fin</label>
+            <input type="date" class="form-control" name="endDate" [(ngModel)]="selectedTraining.endDate" (change)="calculateDuration()" [class.is-invalid]="isDateRangeInvalid()">
+            <div class="invalid-feedback" *ngIf="isDateRangeInvalid()">
+              La date de fin ne peut pas être antérieure à la date de début.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fs-7 fw-semibold text-dark">Durée *</label>
+            <input type="text" class="form-control" name="duration" #durCtrl="ngModel" [(ngModel)]="selectedTraining.duration" [class.is-invalid]="(durCtrl.invalid && (durCtrl.touched || submitted))" placeholder="Ex: 5 jours" required>
+            <div class="invalid-feedback" *ngIf="durCtrl.invalid && (durCtrl.touched || submitted)">
+              La durée est obligatoire.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fs-7 fw-semibold text-dark">Mode *</label>
+            <select class="form-select" name="mode" [(ngModel)]="selectedTraining.mode" required>
+              <option value="En ligne">En ligne</option>
+              <option value="Présentiel">Présentiel</option>
+              <option value="Hybride">Hybride</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fs-7 fw-semibold text-dark">Places disponibles *</label>
+            <input type="number" class="form-control" name="availableSeats" min="0" #seatsCtrl="ngModel" [(ngModel)]="selectedTraining.availableSeats" [class.is-invalid]="(seatsCtrl.invalid || (selectedTraining.availableSeats !== undefined && selectedTraining.availableSeats < 0)) && (seatsCtrl.touched || submitted)" required>
+            <div class="invalid-feedback" *ngIf="(seatsCtrl.invalid || (selectedTraining.availableSeats !== undefined && selectedTraining.availableSeats < 0)) && (seatsCtrl.touched || submitted)">
+              Le nombre de places doit être $\ge$ 0.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fs-7 fw-semibold text-dark">Statut *</label>
+            <select class="form-select" name="status" [(ngModel)]="selectedTraining.status" required>
+              <option value="Disponible">Disponible</option>
+              <option value="En cours">En cours</option>
+              <option value="Terminée">Terminée</option>
+              <option value="Annulée">Annulée</option>
+            </select>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fs-7 fw-semibold text-dark">Description</label>
+            <textarea class="form-control" name="description" rows="2" [(ngModel)]="selectedTraining.description" placeholder="Description générale de la formation..."></textarea>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fs-7 fw-semibold text-dark">Objectifs</label>
+            <textarea class="form-control" name="objectives" rows="2" [(ngModel)]="selectedTraining.objectives" placeholder="Objectifs pédagogiques..."></textarea>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fs-7 fw-semibold text-dark">Programme détaillé (Syllabus)</label>
+            <textarea class="form-control" name="syllabus" rows="3" [(ngModel)]="selectedTraining.syllabus" placeholder="1. Chapitre 1... 2. Chapitre 2..."></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer d-flex justify-content-end gap-2">
+      <button (click)="closeModal()" class="btn btn-light border" type="button">Annuler</button>
+      <button (click)="saveTraining()" class="fluent-btn-primary" [disabled]="isFormInvalid()" type="button">
+        {{ isEditMode ? 'Enregistrer' : 'Créer la formation' }}
+      </button>
+    </div>
+  </div>
+</div>

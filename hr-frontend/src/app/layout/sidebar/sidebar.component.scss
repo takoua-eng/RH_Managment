@@ -125,3 +125,44 @@
     font-size: 1.1rem;
   }
 }
+
+// =========================================================
+// RACCOURCI ESPACE MANAGER
+// =========================================================
+
+.manager-shortcut-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.07);
+  color: #d97706;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+
+  .material-symbols-outlined {
+    font-size: 1.35rem;
+    flex-shrink: 0;
+  }
+
+  .manager-shortcut-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &:hover {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
+  }
+}
+

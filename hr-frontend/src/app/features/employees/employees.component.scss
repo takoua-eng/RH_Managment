@@ -165,3 +165,105 @@
   }
 }
 
+/* Tunisian Phone Input Component Styling */
+.phone-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--fluent-border, #d1d5db);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--fluent-bg-input, #ffffff);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus-within {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  &.is-invalid-wrapper {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  }
+}
+
+.phone-prefix-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--fluent-surface-hover, #f3f4f6);
+  border-right: 1px solid var(--fluent-border, #d1d5db);
+  user-select: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--fluent-text-primary, #374151);
+
+  .tunisia-flag-svg {
+    width: 22px;
+    height: 15px;
+    border-radius: 2px;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+    object-fit: cover;
+  }
+
+  .prefix-code {
+    letter-spacing: 0.5px;
+  }
+}
+
+.phone-input-field {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  flex: 1;
+  padding-left: 0.75rem;
+}
+
+/* Validation Feedback & Red Borders */
+.fluent-input.is-invalid {
+  border-color: #ef4444 !important;
+  background-image: none !important;
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  }
+}
+
+.invalid-feedback-custom {
+  color: #ef4444;
+  font-size: 0.775rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Operator Badges */
+.operator-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  width: fit-content;
+
+  &.operator-ooredoo {
+    background-color: rgba(225, 29, 72, 0.1);
+    color: #e11d48;
+    border: 1px solid rgba(225, 29, 72, 0.25);
+  }
+
+  &.operator-tt {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+    border: 1px solid rgba(37, 99, 235, 0.25);
+  }
+
+  &.operator-orange {
+    background-color: rgba(249, 115, 22, 0.1);
+    color: #ea580c;
+    border: 1px solid rgba(249, 115, 22, 0.25);
+  }
+}

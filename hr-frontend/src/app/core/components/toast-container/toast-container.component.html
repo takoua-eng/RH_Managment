@@ -1,0 +1,26 @@
+<div class="toast-floating-container">
+  <div 
+    *ngFor="let toast of toasts" 
+    class="toast-item" 
+    [ngClass]="toast.type"
+    [class.cursor-pointer]="!!toast.link"
+    (click)="onToastClick(toast)">
+    
+    <div class="toast-icon-wrapper">
+      <span class="material-symbols-outlined toast-icon" *ngIf="toast.type === 'success'">check_circle</span>
+      <span class="material-symbols-outlined toast-icon" *ngIf="toast.type === 'error'">error</span>
+      <span class="material-symbols-outlined toast-icon" *ngIf="toast.type === 'warning'">warning</span>
+      <span class="material-symbols-outlined toast-icon" *ngIf="toast.type === 'info'">info</span>
+    </div>
+
+    <div class="toast-body">
+      <div class="toast-title fw-bold" *ngIf="toast.title">{{ toast.title }}</div>
+      <div class="toast-message fs-7">{{ toast.message }}</div>
+    </div>
+
+    <button type="button" class="toast-close-btn" (click)="remove(toast.id)">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+  </div>
+</div>

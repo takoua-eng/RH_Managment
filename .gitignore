@@ -1,0 +1,33 @@
+# ===== Données des utilisateurs (CV, lettres, photos, certificats) =====
+uploads/
+cv-matcher/uploads/
+
+# ===== Secrets =====
+.env
+*.env
+cv-matcher/.env
+
+# ===== Backend Java =====
+hr-backend/target/
+hr-backend/.idea/
+hr-backend/backend_log.txt
+*.iml
+
+# ===== Frontend Angular =====
+hr-frontend/node_modules/
+hr-frontend/dist/
+hr-frontend/.angular/
+hr-frontend/build_errors.log
+
+# ===== Microservice IA (Python) =====
+cv-matcher/venv/
+cv-matcher/models/*.joblib
+**/__pycache__/
+**/.pytest_cache/
+
+# ===== Divers =====
+structure.txt
+*.log
+.vscode/
+.DS_Store
+Thumbs.db

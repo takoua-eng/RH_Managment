@@ -1,0 +1,83 @@
+<div class="certificate-modal-overlay" (click)="onClose()">
+  <div class="certificate-modal-card" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-warning fs-4">workspace_premium</span>
+        <h4 class="fw-bold mb-0 fs-5 text-dark">Certificat de Formation</h4>
+      </div>
+      <button (click)="onClose()" class="btn-close-custom" aria-label="Fermer">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Certificate Preview Area (Target for html2canvas) -->
+    <div class="certificate-wrapper shadow-lg rounded overflow-hidden mb-3">
+      <div #certificateContent class="certificate-container">
+        <!-- Certificate background image -->
+        <img src="assets/certificat-fond.png" alt="Fond Certificat" class="certificate-bg-img" />
+
+        <!-- Overlay content layer -->
+        <div class="certificate-content-overlay">
+          <!-- Main Inner Card covering default image text while keeping gold/teal ribbons frame -->
+          <div class="certificate-inner-plate">
+            <div class="cert-header">
+              <h1 class="cert-title">ATTESTATION DE RÉUSSITE</h1>
+              <p class="cert-subtitle">Le présent certificat est décerné avec félicitations à</p>
+            </div>
+
+            <div class="cert-recipient">
+              <h2 class="recipient-name">{{ employeeName || 'Nom de l\'employé' }}</h2>
+              <div class="recipient-line"></div>
+            </div>
+
+            <div class="cert-body">
+              <p class="cert-text">Pour avoir suivi et validé avec succès la formation professionnelle :</p>
+              <h3 class="course-title">{{ trainingTitle }}</h3>
+              
+              <div class="cert-details">
+                <span *ngIf="duration"><strong>Durée :</strong> {{ duration }}</span>
+                <span class="dot-separator" *ngIf="duration && trainer">•</span>
+                <span *ngIf="trainer"><strong>Formateur :</strong> {{ trainer }}</span>
+                <span class="dot-separator" *ngIf="(duration || trainer) && level">•</span>
+                <span *ngIf="level"><strong>Niveau :</strong> {{ level }}</span>
+              </div>
+            </div>
+
+            <div class="cert-footer">
+              <div class="footer-col text-start">
+                <p class="meta-label">Date de délivrance</p>
+                <p class="meta-value">{{ formattedCompletionDate }}</p>
+                <div class="signature-line"></div>
+                <p class="sig-title">Le Formateur</p>
+              </div>
+
+              <div class="footer-col text-center cert-seal-space">
+                <p class="meta-label">ID Certificat</p>
+                <p class="meta-id">{{ formattedCertificateId }}</p>
+              </div>
+
+              <div class="footer-col text-end">
+                <p class="meta-label">Fait à Tunis, le {{ formattedCompletionDate }}</p>
+                <div class="signature-line ms-auto"></div>
+                <p class="sig-title">La Direction RH</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions Footer -->
+    <div class="modal-footer d-flex justify-content-end align-items-center pt-2 border-top gap-2">
+      <button (click)="onClose()" class="btn btn-light border btn-sm px-3">
+        Fermer
+      </button>
+      <button (click)="downloadPdf()" [disabled]="isGenerating" class="btn btn-success btn-sm px-4 d-flex align-items-center gap-2 fw-semibold">
+        <span class="spinner-border spinner-border-sm" role="status" *ngIf="isGenerating"></span>
+        <span class="material-symbols-outlined fs-6" *ngIf="!isGenerating">picture_as_pdf</span>
+        {{ isGenerating ? 'Génération...' : 'Télécharger PDF' }}
+      </button>
+    </div>
+  </div>
+</div>

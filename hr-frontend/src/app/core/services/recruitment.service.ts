@@ -1,16 +1,16 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
-import { Candidate } from '../models/interfaces';
+import { MockCandidate } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RecruitmentService {
-  private candidatesSubject = new BehaviorSubject<Candidate[]>([]);
+  private candidatesSubject = new BehaviorSubject<MockCandidate[]>([]);
   public candidates$ = this.candidatesSubject.asObservable();
 
-  private defaultCandidates: Candidate[] = [
+  private defaultCandidates: MockCandidate[] = [
     {
       id: 1,
       name: 'Ahmed Alami',
@@ -70,25 +70,25 @@ export class RecruitmentService {
     }
   }
 
-  private saveCandidatesToStorage(cands: Candidate[]): void {
+  private saveCandidatesToStorage(cands: MockCandidate[]): void {
     localStorage.setItem('hr_candidates', JSON.stringify(cands));
     this.candidatesSubject.next(cands);
   }
 
-  public getCandidates(): Candidate[] {
+  getCandidates(): MockCandidate[] {
     return this.candidatesSubject.value;
   }
 
-  public updateCandidateStatus(id: number, status: Candidate['status']): void {
+  updateCandidateStatus(id: number, status: MockCandidate['status']): void {
     const current = this.candidatesSubject.value;
     const updated = current.map(c => c.id === id ? { ...c, status } : c);
     this.saveCandidatesToStorage(updated);
   }
 
-  public addCandidate(candidate: Omit<Candidate, 'id'>): void {
+  addCandidate(candidate: Omit<MockCandidate, 'id'>): void {
     const current = this.candidatesSubject.value;
     const nextId = current.length > 0 ? Math.max(...current.map(c => c.id)) + 1 : 1;
-    const newCand: Candidate = {
+    const newCand: MockCandidate = {
       ...candidate,
       id: nextId
     };
@@ -96,8 +96,8 @@ export class RecruitmentService {
   }
 
   // Simulates AI Parsing and returns the exact prompt response
-  public simulateAiAnalysis(fileName: string, position: string = 'Développeur Fullstack'): Observable<Omit<Candidate, 'id' | 'status'>> {
-    const result: Omit<Candidate, 'id' | 'status'> = {
+  public simulateAiAnalysis(fileName: string, position: string = 'Développeur Fullstack'): Observable<Omit<MockCandidate, 'id' | 'status'>> {
+    const result: Omit<MockCandidate, 'id' | 'status'> = {
       name: fileName.replace(/\.[^/.]+$/, '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
       cvName: fileName,
       position: position,

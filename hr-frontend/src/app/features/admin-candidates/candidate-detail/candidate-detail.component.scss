@@ -1,0 +1,33 @@
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  
+  &.btn-sm {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.dropdown-toggle::after {
+  display: none;
+}
+
+.badge-new { background-color: var(--fluent-primary-light); color: var(--fluent-primary); border: 1px solid var(--fluent-primary-light); }
+.badge-forwarded { background-color: #E0E7FF; color: #4338CA; border: 1px solid #C7D2FE; }
+.badge-interview { background-color: var(--fluent-warning-light); color: var(--fluent-warning); border: 1px solid var(--fluent-warning-light); }
+.badge-interview-done { background-color: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+.badge-accepted { background-color: var(--fluent-success-light); color: var(--fluent-success); border: 1px solid var(--fluent-success-light); }
+.badge-rejected { background-color: var(--fluent-error-light); color: var(--fluent-error); border: 1px solid var(--fluent-error-light); }

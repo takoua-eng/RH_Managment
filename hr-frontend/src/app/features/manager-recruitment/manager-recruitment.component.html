@@ -1,0 +1,131 @@
+<div class="container-fluid px-0">
+  
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Candidatures & Recrutement</h2>
+      <p class="text-secondary mb-0">Consultez les candidatures transmises à votre attention pour évaluation.</p>
+    </div>
+    <button class="btn btn-outline-secondary d-flex align-items-center gap-2" (click)="loadAssignedCandidates()">
+      <span class="material-symbols-outlined fs-5">refresh</span> Actualiser
+    </button>
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="fluent-card mb-4 p-3 rounded-4 shadow-sm bg-white border-0">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-7">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0">
+            <span class="material-symbols-outlined text-secondary fs-5">search</span>
+          </span>
+          <input type="text" class="form-select border-start-0 bg-light" 
+                 placeholder="Rechercher par nom, email ou poste..." 
+                 [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()">
+        </div>
+      </div>
+      <div class="col-md-5">
+        <select class="form-select bg-light border-0" [(ngModel)]="statusFilter" (change)="applyFilters()">
+          <option value="">Tous les statuts</option>
+          <option value="TRANSMISE_MANAGER">Transmise au Manager</option>
+          <option value="ENTRETIEN_PLANIFIE">Entretien planifié</option>
+          <option value="ENTRETIEN_TERMINE">Entretien terminé</option>
+          <option value="ACCEPTEE">Acceptée</option>
+          <option value="REFUSEE">Refusée</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-2 text-muted">Chargement des candidatures...</p>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!loading && filteredCandidates.length === 0" class="fluent-card p-5 text-center bg-white rounded-4 shadow-sm">
+    <span class="material-symbols-outlined fs-1 text-muted mb-3">folder_open</span>
+    <h4>Aucune candidature attribuée</h4>
+    <p class="text-secondary">Aucune candidature ne correspond à vos critères de recherche ou ne vous a été transmise pour le moment.</p>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!loading && filteredCandidates.length > 0" class="fluent-card rounded-4 shadow-sm bg-white overflow-hidden border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light border-bottom">
+          <tr>
+            <th class="ps-4">Candidat</th>
+            <th>Poste</th>
+            <th>Département</th>
+            <th>Date de candidature</th>
+            <th>Date de transmission</th>
+            <th>Statut</th>
+            <th class="cursor-pointer" (click)="toggleAiScoreSort()">
+              Score IA
+              <span class="material-symbols-outlined fs-7 align-middle" *ngIf="sortBy === 'aiScore'">{{ sortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</span>
+            </th>
+            <th class="text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of filteredCandidates" class="cursor-pointer" (click)="goToDetails(c.id)">
+            <td class="ps-4">
+              <div class="d-flex align-items-center gap-3">
+                <div class="avatar-circle bg-primary-subtle text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                  {{ c.firstName.charAt(0) }}{{ c.lastName.charAt(0) }}
+                </div>
+                <div>
+                  <div class="fw-semibold text-dark">{{ c.firstName }} {{ c.lastName }}</div>
+                  <div class="fs-8 text-secondary">{{ c.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="fw-medium text-dark">{{ c.jobOfferTitle }}</span>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border">{{ c.jobOfferDepartment }}</span>
+            </td>
+            <td>
+              <span class="text-secondary fs-8">{{ c.applicationDate | date:'dd/MM/yyyy' }}</span>
+            </td>
+            <td>
+              <span class="text-secondary fs-8">{{ (c.transmissionDate | date:'dd/MM/yyyy') || '-' }}</span>
+            </td>
+            <td>
+              <span class="badge rounded-pill px-3 py-2 fs-8" [ngClass]="getStatusBadgeClass(c.status)">
+                {{ getStatusLabel(c.status) }}
+              </span>
+            </td>
+            <td>
+              <ng-container [ngSwitch]="c.aiStatus">
+                <!-- TERMINEE -->
+                <span *ngSwitchCase="'TERMINEE'" class="badge rounded-pill px-2 py-1 fs-8 fw-semibold" [ngClass]="getAiScoreBadgeClass(c.aiRecommendation)">
+                  {{ formatAiScore(c.aiScore) }}
+                </span>
+                <!-- ERREUR -->
+                <span *ngSwitchCase="'ERREUR'" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 fs-8" [title]="c.aiError || 'Erreur d\'analyse'">
+                  Erreur
+                </span>
+                <!-- Absent ou EN_ATTENTE -->
+                <span *ngSwitchDefault class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 fs-8">
+                  Analyse…
+                </span>
+              </ng-container>
+            </td>
+            <td class="text-end pe-4" (click)="$event.stopPropagation()">
+              <button class="btn btn-sm btn-outline-primary rounded-3 d-inline-flex align-items-center gap-1" (click)="goToDetails(c.id)">
+                <span class="material-symbols-outlined fs-6">visibility</span> Consulter
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

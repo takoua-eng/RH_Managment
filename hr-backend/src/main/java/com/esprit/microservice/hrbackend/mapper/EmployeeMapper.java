@@ -12,8 +12,17 @@ public class EmployeeMapper {
         }
 
         String photoUrl = null;
-        if (employee.getPhoto() != null && employee.getPhoto().length > 0) {
-            photoUrl = "/api/employees/" + employee.getId() + "/photo";
+        if (employee.getPhotoPath() != null && !employee.getPhotoPath().isEmpty()) {
+            photoUrl = "http://localhost:8087/api/employees/" + employee.getId() + "/photo";
+        }
+
+        // Infos du manager direct
+        Long   managerId   = null;
+        String managerName = null;
+        if (employee.getManager() != null) {
+            managerId   = employee.getManager().getId();
+            managerName = employee.getManager().getFirstName()
+                        + " " + employee.getManager().getLastName();
         }
 
         return EmployeeResponseDTO.builder()
@@ -23,13 +32,22 @@ public class EmployeeMapper {
                 .email(employee.getEmail())
                 .phone(employee.getPhone())
                 .position(employee.getPosition())
-                .department(employee.getDepartment())
+                .department(
+                employee.getDepartment() != null
+                        ? employee.getDepartment().getName()
+                        : null
+        )
                 .hireDate(employee.getHireDate())
                 .status(employee.getStatus())
+                .role(employee.getRole())
                 .keycloakId(employee.getKeycloakId())
                 .photoContentType(employee.getPhotoContentType())
                 .photoUrl(photoUrl)
                 .salary(employee.getSalary())
+                .availableLeaveDays(employee.getAvailableLeaveDays())
+                .address(employee.getAddress())
+                .managerId(managerId)
+                .managerName(managerName)
                 .build();
     }
 
@@ -44,9 +62,11 @@ public class EmployeeMapper {
                 .email(requestDTO.getEmail())
                 .phone(requestDTO.getPhone())
                 .position(requestDTO.getPosition())
-                .department(requestDTO.getDepartment())
                 .hireDate(requestDTO.getHireDate())
                 .salary(requestDTO.getSalary())
+                .availableLeaveDays(requestDTO.getAvailableLeaveDays() != null ? requestDTO.getAvailableLeaveDays() : 25)
+                .address(requestDTO.getAddress())
+                .role(requestDTO.getRole())
                 .build();
     }
 
@@ -60,8 +80,14 @@ public class EmployeeMapper {
         employee.setEmail(requestDTO.getEmail());
         employee.setPhone(requestDTO.getPhone());
         employee.setPosition(requestDTO.getPosition());
-        employee.setDepartment(requestDTO.getDepartment());
         employee.setHireDate(requestDTO.getHireDate());
         employee.setSalary(requestDTO.getSalary());
+        if (requestDTO.getAvailableLeaveDays() != null) {
+            employee.setAvailableLeaveDays(requestDTO.getAvailableLeaveDays());
+        }
+        employee.setAddress(requestDTO.getAddress());
+        if (requestDTO.getRole() != null) {
+            employee.setRole(requestDTO.getRole());
+        }
     }
 }

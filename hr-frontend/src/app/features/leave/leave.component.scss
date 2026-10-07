@@ -74,6 +74,13 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   width: 100%;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  
+  &:hover {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
   
   &.c-paye { background-color: var(--fluent-primary); }
   &.c-maladie { background-color: var(--fluent-error); }
@@ -115,5 +122,26 @@
   }
   .modal-body {
     padding: 1.5rem;
+  }
+}
+
+/* Skeleton Loader styling */
+.skeleton-loader {
+  display: inline-block;
+  height: 24px;
+  width: 60px;
+  background: linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 50%, #f2f2f2 75%);
+  background-size: 200% 100%;
+  animation: loading-skeleton 1.5s infinite;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+@keyframes loading-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
