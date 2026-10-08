@@ -10,6 +10,10 @@ pipeline {
         disableConcurrentBuilds()
         timeout(time: 60, unit: 'MINUTES')   // 1er build long : PyTorch + modèle de langue
     }
+        triggers {
+        // Vérifie toutes les 5 minutes s'il y a de nouveaux commits sur GitHub
+        pollSCM('H/5 * * * *')
+    }
 
     environment {
         REGISTRY  = '192.168.255.129:8082'
@@ -63,6 +67,21 @@ pipeline {
                         echo "$NEXUS_PWD" | docker login "$REGISTRY" -u "$NEXUS_USER" --password-stdin
                         docker push -q "$IMAGE:$IMAGE_TAG"
                         docker push -q "$IMAGE:latest"
+                    '''
+                }
+            }
+        }
+
+        stage('Déploiement Kubernetes') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh '''
+                        kubectl -n hr-platform set image deployment/cv-matcher cv-matcher="$IMAGE:$IMAGE_TAG"
+                        if ! kubectl -n hr-platform rollout status deployment/cv-matcher --timeout=900s; then
+                            echo "Échec du déploiement : retour à la version précédente"
+                            kubectl -n hr-platform rollout undo deployment/cv-matcher
+                            exit 1
+                        fi
                     '''
                 }
             }

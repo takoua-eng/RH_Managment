@@ -11,6 +11,11 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES')
     }
 
+        triggers {
+        // Vérifie toutes les 5 minutes s'il y a de nouveaux commits sur GitHub
+        pollSCM('H/5 * * * *')
+    }
+
     environment {
         REGISTRY   = '192.168.255.129:8082'              // registre Docker de Nexus
         IMAGE      = "${REGISTRY}/hr-backend"
@@ -64,6 +69,24 @@ pipeline {
                         echo "$NEXUS_PWD" | docker login "$REGISTRY" -u "$NEXUS_USER" --password-stdin
                         docker push -q "$IMAGE:$IMAGE_TAG"
                         docker push -q "$IMAGE:latest"
+                    '''
+                }
+            }
+        }
+
+                stage('Déploiement Kubernetes') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh '''
+                        # Nouvelle version de l'image, identifiée par le numéro du build
+                        kubectl -n hr-platform set image deployment/hr-backend hr-backend="$IMAGE:$IMAGE_TAG"
+
+                        # Attend que la nouvelle version soit prête ; sinon, retour à la précédente
+                        if ! kubectl -n hr-platform rollout status deployment/hr-backend --timeout=300s; then
+                            echo "Échec du déploiement : retour à la version précédente"
+                            kubectl -n hr-platform rollout undo deployment/hr-backend
+                            exit 1
+                        fi
                     '''
                 }
             }
