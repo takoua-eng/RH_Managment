@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of, catchError, map } from 'rxjs';
-import { environment } from '../../../environments/environment.prod';
+import { environment } from '../../../environments/environment';
 
 export interface UserSession {
   email: string;
@@ -29,7 +29,11 @@ export interface TokenResponse {
   token_type?: string;
 }
 
-const BACKEND_URL = environment.apiUrl;            // → /api (cluster) or http://localhost:8087/api (PC)
+/** Base des appels à l'API : /api (cluster) ou http://localhost:8087/api (PC). */
+const API_URL = environment.apiUrl;
+/** Adresse du serveur SANS /api, pour les chemins renvoyés par le backend qui commencent déjà par /api. */
+const SERVER_URL = environment.backendUrl;
+const DEFAULT_AVATAR = 'assets/images/avatar.png';
 const ACCESS_TOKEN_KEY = 'hr_access_token';
 const REFRESH_TOKEN_KEY = 'hr_refresh_token';
 
@@ -52,7 +56,7 @@ export class AuthService {
    * Connexion via le backend (POST /api/auth/login)
    */
   public login(username: string, password: string): Observable<boolean> {
-    return this.http.post<TokenResponse>(`${BACKEND_URL}/auth/login`, { username, password }).pipe(
+    return this.http.post<TokenResponse>(`${API_URL}/auth/login`, { username, password }).pipe(
       map(res => {
         this.saveTokens(res);
         this.initializeUserSession();
@@ -75,7 +79,7 @@ export class AuthService {
       return of(false);
     }
 
-    return this.http.post<TokenResponse>(`${BACKEND_URL}/auth/refresh`, { refresh_token: refreshToken }).pipe(
+    return this.http.post<TokenResponse>(`${API_URL}/auth/refresh`, { refresh_token: refreshToken }).pipe(
       map(res => {
         this.saveTokens(res);
         this.scheduleTokenRefresh();
@@ -94,7 +98,7 @@ export class AuthService {
   public logout(): void {
     const refreshToken = this.getRefreshToken();
     if (refreshToken) {
-      this.http.post(`${BACKEND_URL}/auth/logout`, { refresh_token: refreshToken }).subscribe({
+      this.http.post(`${API_URL}/auth/logout`, { refresh_token: refreshToken }).subscribe({
         error: err => console.warn('Logout notice:', err)
       });
     }
@@ -213,15 +217,28 @@ export class AuthService {
     return this.getUsername();
   }
 
+  /**
+   * Construit l'adresse complète de la photo.
+   * Le backend renvoie un chemin qui commence déjà par /api (ex. /api/employees/34/photo) :
+   * on le préfixe donc par l'adresse du serveur SANS /api.
+   * Le paramètre v force le navigateur à recharger l'image (après un changement de photo).
+   */
+  private buildPhotoUrl(path: string | null | undefined): string {
+    if (!path) return DEFAULT_AVATAR;
+    if (path.startsWith('http')) return path;
+    const fullPath = path.startsWith('/') ? `${SERVER_URL}${path}` : path;
+    return `${fullPath}${fullPath.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  }
+
   public initializeUserSession(): void {
     if (!this.isLoggedIn()) {
       this.clearSession();
       return;
     }
 
-    this.http.get<any>(`${BACKEND_URL}/me`).pipe(
+    this.http.get<any>(`${API_URL}/me`).pipe(
       map(user => {
-        const email = user.email || this.getEmail() || 'user@corp.com';
+        const email = user.email || this.getEmail() || '';
         const name = user.name || (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : '') || this.getFullName() || 'Utilisateur';
 
         let role: UserSession['role'] = 'Employé';
@@ -235,15 +252,11 @@ export class AuthService {
           else if (this.isManager()) role = 'Manager';
         }
 
-        let userPhoto = user.photoUrl || user.photo;
-        if (userPhoto && userPhoto.startsWith('/')) {
-          userPhoto = `${environment.apiUrl}${userPhoto}`;
-        }
         const session: UserSession = {
           email,
           name,
           role,
-          photo: userPhoto || 'assets/images/avatar.png',
+          photo: this.buildPhotoUrl(user.photoUrl || user.photo),
           id: user.id,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -260,9 +273,8 @@ export class AuthService {
         this.currentUserSubject.next(session);
       }),
       catchError(err => {
-        console.warn('Fallback to token info for user session:', err);
-        const email = this.getEmail() || 'user@corp.com';
-        const name = this.getFullName() || 'Utilisateur';
+        // Profil indisponible : session minimale construite à partir du jeton, avatar par défaut
+        console.warn('Profil indisponible, informations du jeton utilisées :', err);
 
         let role: UserSession['role'] = 'Employé';
         if (this.isAdmin()) role = 'Administrateur';
@@ -270,8 +282,10 @@ export class AuthService {
         else if (this.isManager()) role = 'Manager';
 
         const session: UserSession = {
-          email, name, role,
-          photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          email: this.getEmail(),
+          name: this.getFullName() || 'Utilisateur',
+          role,
+          photo: DEFAULT_AVATAR,
           firstName: this.getFirstName(),
           lastName: this.getLastName()
         };
@@ -284,10 +298,13 @@ export class AuthService {
     this.scheduleTokenRefresh();
   }
 
+  /**
+   * ⚠️ Fonction non encore reliée au backend : aucun email n'est envoyé.
+   * Elle renvoie false pour ne pas faire croire à l'utilisateur que la demande a abouti.
+   */
   public forgotPassword(email: string): Observable<boolean> {
-    return new Observable<boolean>(subscriber => {
-      setTimeout(() => { subscriber.next(true); subscriber.complete(); }, 800);
-    });
+    console.warn('Réinitialisation du mot de passe non disponible pour', email);
+    return of(false);
   }
 
   public tryRestoreSession(): Promise<boolean> {
