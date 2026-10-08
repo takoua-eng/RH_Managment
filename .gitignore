@@ -31,3 +31,5 @@ structure.txt
 .vscode/
 .DS_Store
 Thumbs.db
+*.dump
+*-realm.json

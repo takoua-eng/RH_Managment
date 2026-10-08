@@ -11,5 +11,3 @@ joblib
 pandas
 pytesseract
 pillow
-pytest
-httpx
