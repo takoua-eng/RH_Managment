@@ -34,19 +34,31 @@ pipeline {
                 // Démarre l'image et vérifie que Nginx sert bien l'application
                 sh '''
                     docker run -d --name "$TEST_CONTAINER" "$IMAGE:$IMAGE_TAG"
-                    sleep 3
-                    docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://localhost:8080/
-                    docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://localhost:8080/dashboard/leave
+
+                    # Attend que Nginx réponde (15 secondes au maximum)
+                    for i in $(seq 1 15); do
+                        if docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://127.0.0.1:8080/; then
+                            break
+                        fi
+                        sleep 1
+                    done
+
+                    # Page d'accueil, puis une route Angular (doit renvoyer index.html, pas une 404)
+                    docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://127.0.0.1:8080/
+                    docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://127.0.0.1:8080/dashboard/leave
                     echo "Nginx sert la page d'accueil et les routes Angular"
                 '''
             }
             post {
+                failure {
+                    // En cas d'échec, affiche les journaux de Nginx pour comprendre
+                    sh 'docker logs "$TEST_CONTAINER" || true'
+                }
                 always {
                     sh 'docker rm -f "$TEST_CONTAINER" || true'
                 }
             }
         }
-
         stage('Envoi vers Nexus') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-docker',
