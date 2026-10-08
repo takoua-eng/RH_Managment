@@ -3,9 +3,11 @@ package com.esprit.microservice.hrbackend.service;
 import com.esprit.microservice.hrbackend.dto.LeaveCalendarDTO;
 import com.esprit.microservice.hrbackend.dto.LeaveDTO;
 import com.esprit.microservice.hrbackend.dto.LeaveStatsDTO;
+import com.esprit.microservice.hrbackend.entity.Employee;
 import com.esprit.microservice.hrbackend.entity.Leave;
 import com.esprit.microservice.hrbackend.entity.LeaveStatus;
 import com.esprit.microservice.hrbackend.entity.LeaveType;
+import com.esprit.microservice.hrbackend.event.LeaveRequestSubmittedEvent;
 import com.esprit.microservice.hrbackend.exception.EmployeeNotFoundException;
 import com.esprit.microservice.hrbackend.exception.InvalidLeaveStatusTransitionException;
 import com.esprit.microservice.hrbackend.exception.LeaveNotFoundException;
@@ -13,23 +15,26 @@ import com.esprit.microservice.hrbackend.mapper.LeaveMapper;
 import com.esprit.microservice.hrbackend.repository.EmployeeRepository;
 import com.esprit.microservice.hrbackend.repository.LeaveRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.esprit.microservice.hrbackend.entity.NotificationType;
-import com.esprit.microservice.hrbackend.service.NotificationService;
-
-import org.springframework.context.ApplicationEventPublisher;
-import com.esprit.microservice.hrbackend.event.LeaveRequestSubmittedEvent;
-
+/**
+ * Demandes, consultation et annulation des congés.
+ * La décision (acceptation ou refus) est prise par le manager, dans LeaveDecisionService.
+ */
 @Service
 @RequiredArgsConstructor
 public class LeaveService {
@@ -39,9 +44,14 @@ public class LeaveService {
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
 
+    // =========================================================
+    // DEMANDE DE CONGÉ
+    // =========================================================
+
+    /** Crée une demande au statut PENDING et prévient le manager de l'employé. */
     @Transactional
     public LeaveDTO requestLeave(LeaveDTO dto) {
-        var employee = employeeRepository.findById(dto.getEmployeeId())
+        Employee employee = employeeRepository.findById(dto.getEmployeeId())
                 .orElseThrow(() -> new EmployeeNotFoundException("Employee not found with id: " + dto.getEmployeeId()));
 
         if (dto.getStartDate() == null || dto.getEndDate() == null) {
@@ -56,8 +66,8 @@ public class LeaveService {
         leave.setStatus(LeaveStatus.PENDING);
 
         Leave saved = leaveRepository.save(leave);
-        
-        // Notify Manager via Domain Event
+
+        // Notification du manager par événement (envoyée après la validation de la transaction)
         if (employee.getManager() != null) {
             eventPublisher.publishEvent(new LeaveRequestSubmittedEvent(saved.getId(), employee.getManager().getId()));
         }
@@ -65,65 +75,9 @@ public class LeaveService {
         return convertToDTOWithEmployeeName(saved);
     }
 
-    @Transactional
-    public LeaveDTO approveByRH(Long leaveId) {
-        Leave leave = leaveRepository.findById(leaveId)
-                .orElseThrow(() -> new LeaveNotFoundException("Leave request not found with id: " + leaveId));
-
-        if (leave.getStatus() == LeaveStatus.APPROVED) {
-            throw new InvalidLeaveStatusTransitionException("Leave request is already approved by RH");
-        }
-
-        if (leave.getStatus() == LeaveStatus.REJECTED) {
-            throw new InvalidLeaveStatusTransitionException("Cannot approve a rejected leave request");
-        }
-
-        leave.setStatus(LeaveStatus.APPROVED);
-        Leave updated = leaveRepository.save(leave);
-        
-        eventPublisher.publishEvent(new com.esprit.microservice.hrbackend.event.LeaveStatusChangedEvent(updated.getId(), "ACCEPTÉE PAR LES RH", null));
-        
-        return convertToDTOWithEmployeeName(updated);
-    }
-
-    @Transactional
-    public LeaveDTO approveByManager(Long leaveId) {
-        Leave leave = leaveRepository.findById(leaveId)
-                .orElseThrow(() -> new LeaveNotFoundException("Leave request not found with id: " + leaveId));
-
-        if (leave.getStatus() == LeaveStatus.APPROVED) {
-            throw new InvalidLeaveStatusTransitionException("Leave request is already approved by Manager");
-        }
-
-        if (leave.getStatus() == LeaveStatus.REJECTED) {
-            throw new InvalidLeaveStatusTransitionException("Cannot approve a rejected leave request");
-        }
-
-        leave.setStatus(LeaveStatus.APPROVED);
-        Leave updated = leaveRepository.save(leave);
-
-        eventPublisher.publishEvent(new com.esprit.microservice.hrbackend.event.LeaveStatusChangedEvent(updated.getId(), "VALIDÉE PAR LE MANAGER", null));
-
-        return convertToDTOWithEmployeeName(updated);
-    }
-
-    @Transactional
-    public LeaveDTO rejectLeave(Long leaveId, String reason) {
-        Leave leave = leaveRepository.findById(leaveId)
-                .orElseThrow(() -> new LeaveNotFoundException("Leave request not found with id: " + leaveId));
-
-        if (leave.getStatus() == LeaveStatus.REJECTED) {
-            throw new InvalidLeaveStatusTransitionException("Leave request is already rejected");
-        }
-
-        leave.setStatus(LeaveStatus.REJECTED);
-        leave.setReason(reason);
-        Leave updated = leaveRepository.save(leave);
-        
-        eventPublisher.publishEvent(new com.esprit.microservice.hrbackend.event.LeaveStatusChangedEvent(updated.getId(), "REFUSÉE", null));
-        
-        return convertToDTOWithEmployeeName(updated);
-    }
+    // =========================================================
+    // CONSULTATION
+    // =========================================================
 
     @Transactional(readOnly = true)
     public List<LeaveDTO> getLeaveHistory(Long employeeId) {
@@ -143,6 +97,15 @@ public class LeaveService {
                 .collect(Collectors.toList());
     }
 
+    /** Demandes en attente de la décision du manager. */
+    @Transactional(readOnly = true)
+    public List<LeaveDTO> getPendingLeaves() {
+        return leaveRepository.findAll().stream()
+                .filter(l -> l.getStatus() == LeaveStatus.PENDING)
+                .map(this::convertToDTOWithEmployeeName)
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
     public LeaveStatsDTO getStats() {
         List<Leave> allLeaves = leaveRepository.findAll();
@@ -151,21 +114,24 @@ public class LeaveService {
         LocalDate today = LocalDate.now();
         YearMonth thisMonth = YearMonth.now();
 
+        // En attente : uniquement les demandes que le manager n'a pas encore traitées
         long pending = allLeaves.stream()
-                .filter(l -> l.getStatus() == LeaveStatus.APPROVED|| l.getStatus() == LeaveStatus.PENDING)
+                .filter(l -> l.getStatus() == LeaveStatus.PENDING)
                 .count();
 
+        // Absents aujourd'hui : congés approuvés couvrant la date du jour (un employé compté une fois)
         long absentToday = allLeaves.stream()
-                .filter(l -> (l.getStatus() == LeaveStatus.APPROVED || l.getStatus() == LeaveStatus.APPROVED))
+                .filter(l -> l.getStatus() == LeaveStatus.APPROVED)
                 .filter(l -> !l.getStartDate().isAfter(today) && !l.getEndDate().isBefore(today))
                 .map(Leave::getEmployeeId)
                 .distinct()
                 .count();
 
+        // Approuvés ce mois-ci
         long approvedThisMonth = allLeaves.stream()
-                .filter(l -> (l.getStatus() == LeaveStatus.APPROVED || l.getStatus() == LeaveStatus.APPROVED))
+                .filter(l -> l.getStatus() == LeaveStatus.APPROVED)
                 .filter(l -> (l.getCreatedAt() != null && YearMonth.from(l.getCreatedAt()).equals(thisMonth))
-                          || (l.getStartDate() != null && YearMonth.from(l.getStartDate()).equals(thisMonth)))
+                        || (l.getStartDate() != null && YearMonth.from(l.getStartDate()).equals(thisMonth)))
                 .count();
 
         double presenceRate = 100.0;
@@ -182,32 +148,27 @@ public class LeaveService {
                 .build();
     }
 
+    /** Absences du mois : congés approuvés et en attente (les refusés et annulés sont exclus). */
     @Transactional(readOnly = true)
     public List<LeaveCalendarDTO> getCalendarAbsences(int year, int month) {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
 
-        List<Leave> approvedLeaves = leaveRepository.findAll().stream()
-                .filter(l -> l.getStatus() != LeaveStatus.REJECTED)
+        List<Leave> leaves = leaveRepository.findAll().stream()
+                .filter(l -> l.getStatus() == LeaveStatus.APPROVED || l.getStatus() == LeaveStatus.PENDING)
                 .filter(l -> !l.getStartDate().isAfter(endOfMonth) && !l.getEndDate().isBefore(startOfMonth))
                 .collect(Collectors.toList());
 
         List<LeaveCalendarDTO> calendarAbsences = new ArrayList<>();
 
-        for (Leave l : approvedLeaves) {
+        for (Leave l : leaves) {
             String employeeName = employeeRepository.findById(l.getEmployeeId())
                     .map(emp -> emp.getFirstName() + " " + emp.getLastName())
                     .orElse("Unknown Employee");
 
             List<String> dates = new ArrayList<>();
-            LocalDate current = l.getStartDate();
-            if (current.isBefore(startOfMonth)) {
-                current = startOfMonth;
-            }
-            LocalDate end = l.getEndDate();
-            if (end.isAfter(endOfMonth)) {
-                end = endOfMonth;
-            }
+            LocalDate current = l.getStartDate().isBefore(startOfMonth) ? startOfMonth : l.getStartDate();
+            LocalDate end = l.getEndDate().isAfter(endOfMonth) ? endOfMonth : l.getEndDate();
 
             while (!current.isAfter(end)) {
                 dates.add(current.toString());
@@ -221,7 +182,7 @@ public class LeaveService {
                 frontendType = "RTT";
             }
 
-            long daysCount = java.time.temporal.ChronoUnit.DAYS.between(l.getStartDate(), l.getEndDate()) + 1;
+            long daysCount = ChronoUnit.DAYS.between(l.getStartDate(), l.getEndDate()) + 1;
 
             calendarAbsences.add(LeaveCalendarDTO.builder()
                     .id(l.getId())
@@ -232,7 +193,7 @@ public class LeaveService {
                     .startDate(l.getStartDate())
                     .endDate(l.getEndDate())
                     .daysCount(daysCount)
-                    .status(l.getStatus() != null ? l.getStatus().name() : "APPROVED_RH")
+                    .status(l.getStatus().name())
                     .reason(l.getReason())
                     .build());
         }
@@ -240,14 +201,11 @@ public class LeaveService {
         return calendarAbsences;
     }
 
-    @Transactional(readOnly = true)
-    public List<LeaveDTO> getPendingLeaves() {
-        return leaveRepository.findAll().stream()
-                .filter(l -> l.getStatus() == LeaveStatus.APPROVED || l.getStatus() == LeaveStatus.PENDING)
-                .map(this::convertToDTOWithEmployeeName)
-                .collect(Collectors.toList());
-    }
+    // =========================================================
+    // ANNULATION PAR L'EMPLOYÉ
+    // =========================================================
 
+    /** Seule une demande en attente peut être annulée, et uniquement par son auteur (ou un ADMIN/RH/MANAGER). */
     @Transactional
     public void cancelLeave(Long leaveId) {
         Leave leave = leaveRepository.findById(leaveId)
@@ -257,27 +215,25 @@ public class LeaveService {
             throw new InvalidLeaveStatusTransitionException("Only pending leave requests can be cancelled");
         }
 
-        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isEmployeeOnly = authentication != null && authentication.getAuthorities().stream()
-                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                .map(GrantedAuthority::getAuthority)
                 .noneMatch(auth -> auth.equals("ROLE_ADMIN") || auth.equals("ROLE_RH") || auth.equals("ROLE_MANAGER"));
 
-        if (isEmployeeOnly && authentication != null) {
-            Object principal = authentication.getPrincipal();
-            if (principal instanceof org.springframework.security.oauth2.jwt.Jwt) {
-                org.springframework.security.oauth2.jwt.Jwt jwt = (org.springframework.security.oauth2.jwt.Jwt) principal;
-                String tokenKeycloakId = jwt.getSubject();
-
-                com.esprit.microservice.hrbackend.entity.Employee employee = employeeRepository.findById(leave.getEmployeeId())
-                        .orElseThrow(() -> new EmployeeNotFoundException("Employee not found with id: " + leave.getEmployeeId()));
-                if (employee.getKeycloakId() == null || !employee.getKeycloakId().equals(tokenKeycloakId)) {
-                    throw new org.springframework.security.access.AccessDeniedException("You are not authorized to cancel this leave request");
-                }
+        if (isEmployeeOnly && authentication.getPrincipal() instanceof Jwt jwt) {
+            Employee employee = employeeRepository.findById(leave.getEmployeeId())
+                    .orElseThrow(() -> new EmployeeNotFoundException("Employee not found with id: " + leave.getEmployeeId()));
+            if (employee.getKeycloakId() == null || !employee.getKeycloakId().equals(jwt.getSubject())) {
+                throw new AccessDeniedException("You are not authorized to cancel this leave request");
             }
         }
 
         leaveRepository.delete(leave);
     }
+
+    // =========================================================
+    // UTILITAIRE
+    // =========================================================
 
     private LeaveDTO convertToDTOWithEmployeeName(Leave leave) {
         LeaveDTO dto = LeaveMapper.toDTO(leave);

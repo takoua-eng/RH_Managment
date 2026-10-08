@@ -4,28 +4,31 @@ import com.esprit.microservice.hrbackend.dto.EmployeeResponseDTO;
 import com.esprit.microservice.hrbackend.dto.LeaveCalendarDTO;
 import com.esprit.microservice.hrbackend.dto.LeaveDTO;
 import com.esprit.microservice.hrbackend.dto.LeaveStatsDTO;
+import com.esprit.microservice.hrbackend.entity.Employee;
 import com.esprit.microservice.hrbackend.repository.EmployeeRepository;
 import com.esprit.microservice.hrbackend.service.EmployeeService;
 import com.esprit.microservice.hrbackend.service.LeaveService;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
-
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
+/**
+ * Demandes, consultation et annulation des congés.
+ *
+ * Les décisions (acceptation et refus) ne passent PAS par ce contrôleur :
+ * elles sont prises par le manager de l'employé via LeaveDecisionController
+ * (PUT /api/leave-decisions/{id}/approve et /reject), qui vérifie les droits,
+ * exige un motif en cas de refus et décompte le solde de congés.
+ */
 @RestController
 @RequestMapping("/api/leaves")
 @RequiredArgsConstructor
@@ -57,101 +60,15 @@ public class LeaveController {
             @Valid @RequestBody LeaveDTO dto,
             Authentication authentication) {
 
-        /*
-         * EMPLOYEE :
-         * il peut uniquement créer un congé pour lui-même.
-         */
+        // Un EMPLOYEE ne peut créer une demande que pour lui-même
         if (isEmployee(authentication)) {
-
-            EmployeeResponseDTO employee =
-                    employeeService.getEmployeeById(dto.getEmployeeId());
-
-            verifyEmployeeAccess(
-                    employee,
-                    authentication,
-                    dto
-            );
+            EmployeeResponseDTO employee = employeeService.getEmployeeById(dto.getEmployeeId());
+            verifyEmployeeAccess(employee, authentication,
+                    "Vous n'êtes pas autorisé à demander un congé pour un autre employé.");
         }
 
-        LeaveDTO result =
-                leaveService.requestLeave(dto);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(result);
-    }
-
-
-    // =========================================================
-    // APPROBATION RH
-    // =========================================================
-
-    @PutMapping("/{id}/approve-rh")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RH')")
-    public ResponseEntity<LeaveDTO> approveByRH(
-            @PathVariable Long id) {
-
-        return ResponseEntity.ok(
-                leaveService.approveByRH(id)
-        );
-    }
-
-
-    // =========================================================
-    // APPROBATION MANAGER
-    // =========================================================
-
-    @PutMapping("/{id}/approve-manager")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<LeaveDTO> approveByManager(
-            @PathVariable Long id) {
-
-        return ResponseEntity.ok(
-                leaveService.approveByManager(id)
-        );
-    }
-
-
-    // =========================================================
-    // APPROBATION
-    // =========================================================
-
-    @PutMapping("/{id}/approve")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RH')")
-    public ResponseEntity<LeaveDTO> approveLeave(
-            @PathVariable Long id) {
-
-        return ResponseEntity.ok(
-                leaveService.approveByRH(id)
-        );
-    }
-
-
-    // =========================================================
-    // REFUS
-    // =========================================================
-
-    @PutMapping("/{id}/reject")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RH', 'MANAGER')")
-    public ResponseEntity<LeaveDTO> rejectLeave(
-            @PathVariable Long id,
-            @RequestParam(
-                    value = "reason",
-                    required = false
-            ) String reasonParam,
-            @RequestBody(
-                    required = false
-            ) Map<String, String> body) {
-
-        String reason = reasonParam;
-
-        if (reason == null && body != null) {
-            reason = body.get("reason");
-        }
-
-        return ResponseEntity.ok(
-                leaveService.rejectLeave(id, reason)
-        );
+        LeaveDTO result = leaveService.requestLeave(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
 
@@ -165,21 +82,14 @@ public class LeaveController {
             @PathVariable Long employeeId,
             Authentication authentication) {
 
-        /*
-         * EMPLOYEE :
-         * il peut uniquement consulter son propre historique.
-         */
+        // Un EMPLOYEE ne peut consulter que son propre historique
         if (isEmployee(authentication)) {
-
-            verifyEmployeeAccess(
-                    employeeId,
-                    authentication
-            );
+            EmployeeResponseDTO employee = employeeService.getEmployeeById(employeeId);
+            verifyEmployeeAccess(employee, authentication,
+                    "Vous n'êtes pas autorisé à accéder aux données de cet employé.");
         }
 
-        return ResponseEntity.ok(
-                leaveService.getLeaveHistory(employeeId)
-        );
+        return ResponseEntity.ok(leaveService.getLeaveHistory(employeeId));
     }
 
 
@@ -190,10 +100,7 @@ public class LeaveController {
     @GetMapping("/stats")
     @PreAuthorize("hasAnyRole('ADMIN', 'RH', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<LeaveStatsDTO> getStats() {
-
-        return ResponseEntity.ok(
-                leaveService.getStats()
-        );
+        return ResponseEntity.ok(leaveService.getStats());
     }
 
 
@@ -207,12 +114,7 @@ public class LeaveController {
             @RequestParam("year") int year,
             @RequestParam("month") int month) {
 
-        return ResponseEntity.ok(
-                leaveService.getCalendarAbsences(
-                        year,
-                        month
-                )
-        );
+        return ResponseEntity.ok(leaveService.getCalendarAbsences(year, month));
     }
 
 
@@ -223,10 +125,7 @@ public class LeaveController {
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('ADMIN', 'RH', 'MANAGER')")
     public ResponseEntity<List<LeaveDTO>> getPendingLeaves() {
-
-        return ResponseEntity.ok(
-                leaveService.getPendingLeaves()
-        );
+        return ResponseEntity.ok(leaveService.getPendingLeaves());
     }
 
 
@@ -236,144 +135,61 @@ public class LeaveController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RH', 'EMPLOYEE')")
-    public ResponseEntity<Void> cancelLeave(
-            @PathVariable Long id) {
-
-        /*
-         * La vérification propriétaire du congé
-         * est déjà réalisée dans LeaveService.cancelLeave().
-         */
+    public ResponseEntity<Void> cancelLeave(@PathVariable Long id) {
+        // La vérification du propriétaire du congé est faite dans LeaveService.cancelLeave()
         leaveService.cancelLeave(id);
-
         return ResponseEntity.noContent().build();
     }
 
 
     // =========================================================
-    // VÉRIFIER RÔLE EMPLOYEE
+    // VÉRIFICATIONS D'ACCÈS
     // =========================================================
 
-    private boolean isEmployee(
-            Authentication authentication) {
-
-        return authentication
-                .getAuthorities()
-                .stream()
+    private boolean isEmployee(Authentication authentication) {
+        return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch(
-                        authority ->
-                                authority.equals("ROLE_EMPLOYEE")
-                );
+                .anyMatch(authority -> authority.equals("ROLE_EMPLOYEE"));
     }
 
-
-    // =========================================================
-    // VÉRIFIER ACCÈS EMPLOYÉ PAR ID
-    // =========================================================
-
-    private void verifyEmployeeAccess(
-            Long employeeId,
-            Authentication authentication) {
-
-        EmployeeResponseDTO employee =
-                employeeService.getEmployeeById(employeeId);
-
-        verifyEmployeeAccess(
-                employee,
-                authentication
-        );
-    }
-
-
-    // =========================================================
-    // VÉRIFIER ACCÈS EMPLOYÉ
-    // =========================================================
-
-    private void verifyEmployeeAccess(
-            EmployeeResponseDTO employee,
-            Authentication authentication) {
-
-        if (employee == null) {
-            throw new AccessDeniedException(
-                    "Employé introuvable."
-            );
-        }
-
-        Object principal =
-                authentication.getPrincipal();
-
-        if (!(principal instanceof Jwt)) {
-            throw new AccessDeniedException(
-                    "JWT invalide."
-            );
-        }
-
-        Jwt jwt = (Jwt) principal;
-        String tokenKeycloakId =
-                jwt.getSubject();
-
-        boolean authorized = false;
-        if (employee.getKeycloakId() != null && employee.getKeycloakId().equals(tokenKeycloakId)) {
-            authorized = true;
-        } else {
-            String tokenEmail = jwt.getClaimAsString("email");
-            if (employee.getEmail() != null && employee.getEmail().equalsIgnoreCase(tokenEmail)) {
-                authorized = true;
-                Optional<com.esprit.microservice.hrbackend.entity.Employee> empOpt = employeeRepository.findById(employee.getId());
-                if (empOpt.isPresent()) {
-                    com.esprit.microservice.hrbackend.entity.Employee emp = empOpt.get();
-                    if (emp.getKeycloakId() == null || emp.getKeycloakId().isEmpty()) {
-                        emp.setKeycloakId(tokenKeycloakId);
-                        employeeRepository.save(emp);
-                    }
-                }
-            }
-        }
-
-        if (!authorized) {
-            throw new AccessDeniedException(
-                    "Vous n'êtes pas autorisé à accéder aux données de cet employé."
-            );
-        }
-    }
-
-    private void verifyEmployeeAccess(
-            EmployeeResponseDTO employee,
-            Authentication authentication,
-            LeaveDTO dto) {
+    /**
+     * Vérifie que l'utilisateur connecté est bien l'employé concerné.
+     * Identification par l'identifiant Keycloak, ou à défaut par l'email
+     * (dans ce cas, l'identifiant Keycloak est enregistré pour les fois suivantes).
+     */
+    private void verifyEmployeeAccess(EmployeeResponseDTO employee,
+                                      Authentication authentication,
+                                      String messageRefus) {
 
         if (employee == null) {
             throw new AccessDeniedException("Employé introuvable.");
         }
 
-        Object principal = authentication.getPrincipal();
-        if (!(principal instanceof Jwt)) {
+        if (!(authentication.getPrincipal() instanceof Jwt jwt)) {
             throw new AccessDeniedException("JWT invalide.");
         }
 
-        Jwt jwt = (Jwt) principal;
         String tokenKeycloakId = jwt.getSubject();
-        
-        boolean authorized = false;
+
+        // 1. Identification par l'identifiant Keycloak
         if (employee.getKeycloakId() != null && employee.getKeycloakId().equals(tokenKeycloakId)) {
-            authorized = true;
-        } else {
-            String tokenEmail = jwt.getClaimAsString("email");
-            if (employee.getEmail() != null && employee.getEmail().equalsIgnoreCase(tokenEmail)) {
-                authorized = true;
-                Optional<com.esprit.microservice.hrbackend.entity.Employee> empOpt = employeeRepository.findById(dto.getEmployeeId());
-                if (empOpt.isPresent()) {
-                    com.esprit.microservice.hrbackend.entity.Employee emp = empOpt.get();
-                    if (emp.getKeycloakId() == null || emp.getKeycloakId().isEmpty()) {
-                        emp.setKeycloakId(tokenKeycloakId);
-                        employeeRepository.save(emp);
-                    }
-                }
-            }
+            return;
         }
 
-        if (!authorized) {
-            throw new AccessDeniedException("You are not authorized to request leave for another employee");
+        // 2. Identification par l'email, puis association du compte Keycloak
+        String tokenEmail = jwt.getClaimAsString("email");
+        if (employee.getEmail() != null && employee.getEmail().equalsIgnoreCase(tokenEmail)) {
+            employeeRepository.findById(employee.getId()).ifPresent(emp -> lierCompteKeycloak(emp, tokenKeycloakId));
+            return;
+        }
+
+        throw new AccessDeniedException(messageRefus);
+    }
+
+    private void lierCompteKeycloak(Employee emp, String keycloakId) {
+        if (emp.getKeycloakId() == null || emp.getKeycloakId().isEmpty()) {
+            emp.setKeycloakId(keycloakId);
+            employeeRepository.save(emp);
         }
     }
 }
