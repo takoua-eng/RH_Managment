@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { JobOffer } from '../models/interfaces';
+import { environment } from '../../../environments/environment.prod';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CandidateService {
-  private publicApiUrl = 'http://localhost:8087/api/public';
-  private candidateApiUrl = 'http://localhost:8087/api/recruitment/candidates';
+  private publicApiUrl = `${environment.apiUrl}/public`;
+  private candidateApiUrl = `${environment.apiUrl}/recruitment/candidates`;
 
   constructor(private http: HttpClient) {}
 
@@ -66,6 +67,6 @@ export class CandidateService {
   }
 
   relancerAnalyse(id: number): Observable<any> {
-    return this.http.post<any>(`http://localhost:8087/api/admin/ia/candidates/${id}/analyze`, {});
+    return this.http.post<any>(`${environment.apiUrl}/admin/ia/candidates/${id}/analyze`, {});
   }
 }

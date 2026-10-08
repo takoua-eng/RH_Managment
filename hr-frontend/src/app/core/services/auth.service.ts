@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of, catchError, map } from 'rxjs';
+import { environment } from '../../../environments/environment.prod';
 
 export interface UserSession {
   email: string;
@@ -28,7 +29,7 @@ export interface TokenResponse {
   token_type?: string;
 }
 
-const BACKEND_URL = 'http://localhost:8087/api';
+const BACKEND_URL = `${environment.apiUrl}/api`;
 const ACCESS_TOKEN_KEY = 'hr_access_token';
 const REFRESH_TOKEN_KEY = 'hr_refresh_token';
 
@@ -236,7 +237,7 @@ export class AuthService {
 
         let userPhoto = user.photoUrl || user.photo;
         if (userPhoto && userPhoto.startsWith('/')) {
-          userPhoto = `http://localhost:8087${userPhoto}`;
+          userPhoto = `${environment.apiUrl}${userPhoto}`;
         }
         const session: UserSession = {
           email,

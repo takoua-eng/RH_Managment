@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Training, TrainingEnrollment } from '../models/interfaces';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TrainingService {
-  private apiUrl = 'http://localhost:8087/api/trainings';
+  private apiUrl = `${environment.apiUrl}/trainings`;
 
   constructor(private http: HttpClient) {}
 
@@ -36,7 +37,7 @@ export class TrainingService {
   }
 
   public getTeamTrainings(managerId: number): Observable<TrainingEnrollment[]> {
-    return this.http.get<TrainingEnrollment[]>(`http://localhost:8087/api/manager/${managerId}/team-trainings`);
+    return this.http.get<TrainingEnrollment[]>(`${environment.apiUrl}/manager/${managerId}/team-trainings`);
   }
 
   // Admin/RH methods

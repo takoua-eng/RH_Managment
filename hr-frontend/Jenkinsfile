@@ -1,0 +1,74 @@
+// =====================================================================
+// Pipeline CI/CD du frontend (Angular compilé avec Node.js, servi par Nginx)
+// =====================================================================
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        timeout(time: 40, unit: 'MINUTES')
+    }
+
+    environment {
+        REGISTRY  = '192.168.255.129:8082'
+        IMAGE     = "${REGISTRY}/hr-frontend"
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        TEST_CONTAINER = "hr-frontend-test-${env.BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Compilation et image Docker') {
+            steps {
+                dir('hr-frontend') {
+                    // La compilation Angular (Node.js) se fait dans le Dockerfile
+                    sh 'docker build -t "$IMAGE:$IMAGE_TAG" -t "$IMAGE:latest" .'
+                }
+            }
+        }
+
+        stage('Test de fumée') {
+            steps {
+                // Démarre l'image et vérifie que Nginx sert bien l'application
+                sh '''
+                    docker run -d --name "$TEST_CONTAINER" "$IMAGE:$IMAGE_TAG"
+                    sleep 3
+                    docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://localhost:8080/
+                    docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://localhost:8080/dashboard/leave
+                    echo "Nginx sert la page d'accueil et les routes Angular"
+                '''
+            }
+            post {
+                always {
+                    sh 'docker rm -f "$TEST_CONTAINER" || true'
+                }
+            }
+        }
+
+        stage('Envoi vers Nexus') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'nexus-docker',
+                                                  usernameVariable: 'NEXUS_USER',
+                                                  passwordVariable: 'NEXUS_PWD')]) {
+                    sh '''
+                        echo "$NEXUS_PWD" | docker login "$REGISTRY" -u "$NEXUS_USER" --password-stdin
+                        docker push -q "$IMAGE:$IMAGE_TAG"
+                        docker push -q "$IMAGE:latest"
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker logout "$REGISTRY" || true'
+            sh 'docker rmi "$IMAGE:$IMAGE_TAG" "$IMAGE:latest" || true'
+        }
+        success {
+            echo "Image publiée dans Nexus : ${IMAGE}:${IMAGE_TAG}"
+        }
+    }
+}

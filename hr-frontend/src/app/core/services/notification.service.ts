@@ -10,7 +10,7 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class NotificationService implements OnDestroy {
-  private apiUrl = `${environment.apiUrl || 'http://localhost:8087/api'}/notifications`;
+  private apiUrl = `${environment.apiUrl || '${environment.apiUrl}'}/notifications`;
 
   private notificationsSubject = new BehaviorSubject<NotificationItem[]>([]);
   public notifications$: Observable<NotificationItem[]> = this.notificationsSubject.asObservable();

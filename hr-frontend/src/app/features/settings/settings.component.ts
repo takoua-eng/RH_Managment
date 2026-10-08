@@ -104,7 +104,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
             let rawPhoto = user.photo;
             if (rawPhoto && rawPhoto.startsWith('/')) {
-              rawPhoto = `http://localhost:8087${rawPhoto}`;
+              rawPhoto = `environment.backendUrl${rawPhoto}`;
             }
             this.photoPreview = rawPhoto ? (rawPhoto.startsWith('data:') ? rawPhoto : `${rawPhoto}${rawPhoto.includes('?') ? '&' : '?'}t=${new Date().getTime()}`) : 'assets/images/avatar.png';
             this.loading = false;

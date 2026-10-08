@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { finalize, shareReplay, tap } from 'rxjs/operators';
 import { EmployeeDashboard } from '../models/interfaces';
+import { environment } from '../../../environments/environment';
 
 /**
  * Tableau de bord employé avec cache de session :
@@ -10,7 +11,7 @@ import { EmployeeDashboard } from '../models/interfaces';
  */
 @Injectable({ providedIn: 'root' })
 export class EmployeeDashboardService {
-  private readonly apiUrl = 'http://localhost:8087/api/employee/dashboard';
+  private readonly apiUrl = `${environment.apiUrl}/employee/dashboard`;
   private static readonly CACHE_KEY = 'employee_dashboard_cache';
 
   /** Dernières données connues (null si jamais chargées pendant cette session). */

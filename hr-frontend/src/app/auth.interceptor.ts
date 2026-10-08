@@ -2,6 +2,7 @@ import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from './core/services/auth.service';
 import { catchError, switchMap, throwError } from 'rxjs';
+import { environment } from '../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
@@ -9,7 +10,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   // Attach token if present and request is directed to backend
   let authReq = req;
-  if (token && (req.url.includes('/api/') || req.url.startsWith('http://localhost:8087'))) {
+  if (token && (req.url.includes('/api/') || req.url.startsWith(`${environment.apiUrl}`))) {
     authReq = req.clone({
       setHeaders: { Authorization: `Bearer ${token}` }
     });

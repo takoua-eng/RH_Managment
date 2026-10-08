@@ -14,6 +14,7 @@ import {
   ManagerAvisType, 
   NoteQuestion 
 } from '../../../core/models/interfaces';
+import { environment } from '../../../../environments/environment';
 
 export interface QuestionWithIndex {
   globalIndex: number;
@@ -120,7 +121,7 @@ export class InterviewConductComponent implements OnInit, OnDestroy {
       this.errorMessage = '';
     }
 
-    const targetUrl = `http://localhost:8087/api/recruitment/interviews/${id}`;
+    const targetUrl = `${environment.apiUrl}/recruitment/interviews/${id}`;
 
     this.interviewService.getInterviewById(id).subscribe({
       next: (data) => {

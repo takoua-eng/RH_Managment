@@ -49,7 +49,7 @@ export class NotificationSocketService {
     }
 
     this.rxStomp.configure({
-      brokerURL: environment.wsUrl || 'ws://localhost:8087/ws',
+      brokerURL: environment.wsUrl || 'environment.wsUrl',
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },

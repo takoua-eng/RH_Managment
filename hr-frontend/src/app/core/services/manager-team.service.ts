@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 /** Modèle d'un membre de l'équipe (ManagerTeamMemberDTO) */
 export interface TeamMember {
@@ -22,7 +23,7 @@ export interface TeamMember {
   isOnLeaveToday?: boolean;
 }
 
-const API_BASE = 'http://localhost:8087';
+const API_BASE = `${environment.backendUrl}`;
 
 @Injectable({ providedIn: 'root' })
 export class ManagerTeamService {

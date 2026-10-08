@@ -3,13 +3,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { LeaveRequest, LeaveType } from '../models/interfaces';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LeaveService {
-  private apiUrl = 'http://localhost:8087/api/leaves';
-  private decisionsUrl = 'http://localhost:8087/api/leave-decisions';
+  private apiUrl = `${environment.apiUrl}/leaves`;
+  private decisionsUrl = `${environment.apiUrl}/leave-decisions`;
 
   /**
    * Dernière liste de congés reçue du backend (aucune donnée fictive).

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ManagerDashboardStatsDTO } from '../models/interfaces';
+import { environment } from '../../../environments/environment';
 
 export interface ManagerNotification {
   id?: number;
@@ -34,7 +35,7 @@ export interface ManagerDashboardData {
   recentNotifications: ManagerNotification[];
 }
 
-const API_BASE = 'http://localhost:8087';
+const API_BASE = `${environment.apiUrl}`;
 
 @Injectable({ providedIn: 'root' })
 export class ManagerDashboardService {
