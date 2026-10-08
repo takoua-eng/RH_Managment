@@ -1,0 +1,13 @@
+# Dossier partagé des fichiers (CV, lettres, photos, certificats)
+# ReadWriteMany : le backend écrit, le microservice IA lit, depuis n'importe quel worker
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uploads
+  namespace: hr-platform
+spec:
+  accessModes: ["ReadWriteMany"]
+  storageClassName: nfs
+  resources:
+    requests:
+      storage: 2Gi

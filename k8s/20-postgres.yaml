@@ -1,0 +1,94 @@
+# =====================================================================
+# PostgreSQL 17 : une seule instance pour deux bases
+#   - hr_management (application RH)
+#   - keycloak      (authentification)
+# =====================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: hr-platform
+data:
+  # Exécuté une seule fois, à la création de la base : crée la base de Keycloak
+  01-keycloak.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      CREATE USER keycloak WITH PASSWORD '${KEYCLOAK_DB_PASSWORD}';
+      CREATE DATABASE keycloak OWNER keycloak;
+    EOSQL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: hr-platform
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: hr-platform
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: hr_management
+            - name: POSTGRES_USER
+              value: hr_uuser
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: DB_PASSWORD }
+            - name: KEYCLOAK_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: KEYCLOAK_DB_PASSWORD }
+            # Sous-dossier : évite les conflits avec les fichiers techniques du volume NFS
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits:   { memory: 512Mi }
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U hr_uuser -d hr_management"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nfs
+        resources:
+          requests:
+            storage: 3Gi
