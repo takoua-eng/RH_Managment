@@ -36,6 +36,7 @@ public class Notification {
     private String link;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean unread = true;
 
     @CreationTimestamp

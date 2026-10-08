@@ -29,8 +29,7 @@ pipeline {
                     sh """
                         ./mvnw -B clean verify \
                           -Dtest='!HrBackendApplicationTests' \
-                          -Dsurefire.failIfNoSpecifiedTests=false \
-                          -Dmaven.test.failure.ignore=true
+                          -Dsurefire.failIfNoSpecifiedTests=false
                     """
                 }
             }
@@ -63,8 +62,8 @@ pipeline {
                                                   passwordVariable: 'NEXUS_PWD')]) {
                     sh '''
                         echo "$NEXUS_PWD" | docker login "$REGISTRY" -u "$NEXUS_USER" --password-stdin
-                        docker push "$IMAGE:$IMAGE_TAG"
-                        docker push "$IMAGE:latest"
+                        docker push -q "$IMAGE:$IMAGE_TAG"
+                        docker push -q "$IMAGE:latest"
                     '''
                 }
             }
