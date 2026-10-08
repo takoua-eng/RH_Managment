@@ -1,0 +1,81 @@
+// =====================================================================
+// Pipeline CI/CD du microservice IA (FastAPI, matching CV / offre)
+// =====================================================================
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        timeout(time: 60, unit: 'MINUTES')   // 1er build long : PyTorch + modèle de langue
+    }
+
+    environment {
+        REGISTRY  = '192.168.255.129:8082'
+        IMAGE     = "${REGISTRY}/cv-matcher"
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        TEST_CONTAINER = "cv-matcher-tests-${env.BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Image Docker') {
+            steps {
+                dir('cv-matcher') {
+                    sh 'docker build -t "$IMAGE:$IMAGE_TAG" -t "$IMAGE:latest" .'
+                }
+            }
+        }
+
+        stage('Tests dans l\'image') {
+            steps {
+                dir('cv-matcher') {
+                    // Les tests ne sont pas dans l'image : on les monte en lecture seule,
+                    // puis on lance pytest avec les bibliothèques et le modèle de l'image.
+                    sh '''
+                        docker run --name "$TEST_CONTAINER" \
+                          -v "$PWD/tests:/app/tests:ro" \
+                          -e HF_HUB_OFFLINE=1 \
+                          "$IMAGE:$IMAGE_TAG" \
+                          sh -c "pip install -q --no-cache-dir pytest httpx && python -m pytest -q tests --junitxml=/tmp/pytest.xml"
+                    '''
+                }
+            }
+            post {
+                always {
+                    // Récupère le rapport des tests, puis supprime le conteneur de test
+                    sh '''
+                        docker cp "$TEST_CONTAINER:/tmp/pytest.xml" cv-matcher/pytest.xml || true
+                        docker rm -f "$TEST_CONTAINER" || true
+                    '''
+                    junit allowEmptyResults: true, testResults: 'cv-matcher/pytest.xml'
+                }
+            }
+        }
+
+        stage('Envoi vers Nexus') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'nexus-docker',
+                                                  usernameVariable: 'NEXUS_USER',
+                                                  passwordVariable: 'NEXUS_PWD')]) {
+                    sh '''
+                        echo "$NEXUS_PWD" | docker login "$REGISTRY" -u "$NEXUS_USER" --password-stdin
+                        docker push -q "$IMAGE:$IMAGE_TAG"
+                        docker push -q "$IMAGE:latest"
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker logout "$REGISTRY" || true'
+            sh 'docker rmi "$IMAGE:$IMAGE_TAG" "$IMAGE:latest" || true'
+        }
+        success {
+            echo "Image publiée dans Nexus : ${IMAGE}:${IMAGE_TAG}"
+        }
+    }
+}
