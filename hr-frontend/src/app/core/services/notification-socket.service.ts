@@ -49,8 +49,8 @@ export class NotificationSocketService {
     }
 
     this.rxStomp.configure({
-      brokerURL: environment.wsUrl || 'environment.wsUrl',
-      connectHeaders: {
+brokerURL: environment.wsUrl,      
+connectHeaders: {
         Authorization: `Bearer ${token}`
       },
       heartbeatIncoming: 0,
