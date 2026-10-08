@@ -1,5 +1,6 @@
 package com.esprit.microservice.hrbackend.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -27,6 +28,9 @@ import java.util.stream.Collectors;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${app.allowed-origins}")
+    private String[] allowedOrigins;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -225,7 +229,7 @@ public class SecurityConfig {
                 new CorsConfiguration();
 
         config.setAllowedOrigins(
-                List.of("http://localhost:4200")
+                List.of(allowedOrigins)
         );
 
         config.setAllowedMethods(

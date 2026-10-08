@@ -2,6 +2,7 @@ package com.esprit.microservice.hrbackend.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -31,6 +32,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtDecoder jwtDecoder;
 
+    /**
+     * Adresses autorisées à ouvrir une connexion WebSocket.
+     * En local : http://localhost:4200 (valeur par défaut d'application.properties).
+     * Dans le cluster : fournie par la variable d'environnement ALLOWED_ORIGINS.
+     */
+    @Value("${app.allowed-origins}")
+    private String[] allowedOrigins;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/queue", "/topic");
@@ -40,12 +49,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        log.info("[WebSocket] Origines autorisées : {}", String.join(", ", allowedOrigins));
+
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:4200", "http://127.0.0.1:4200")
+                .setAllowedOriginPatterns(allowedOrigins)
                 .withSockJS();
 
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:4200", "http://127.0.0.1:4200");
+                .setAllowedOriginPatterns(allowedOrigins);
     }
 
     @Override
