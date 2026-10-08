@@ -32,11 +32,7 @@ export class LoginComponent {
   ) {}
 
 
-
   handleLogin() {
-
-            // Préchargement du tableau de bord employé pendant la redirection
-        this.employeeDashboardService.prefetch();
     if (!this.email || !this.password) {
       this.showAlert('Veuillez remplir tous les champs.', 'alert-danger');
       return;
@@ -49,6 +45,8 @@ export class LoginComponent {
       next: (success) => {
         this.loading = false;
         if (success) {
+          // Le jeton est maintenant enregistré : le préchargement du tableau de bord peut partir
+          this.employeeDashboardService.prefetch();
           this.navigateByRole();
         } else {
           this.showAlert('Identifiants invalides.', 'alert-danger');
@@ -60,7 +58,7 @@ export class LoginComponent {
       }
     });
   }
-
+  
   handleForgot() {
     if (!this.forgotEmail) {
       this.showAlert('Veuillez saisir votre adresse email.', 'alert-danger');
