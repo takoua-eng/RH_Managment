@@ -1,0 +1,87 @@
+// =====================================================================
+// Pipeline CI/CD du backend RH (Spring Boot, packagé en WAR pour Tomcat)
+// =====================================================================
+pipeline {
+    agent any
+
+    options {
+        timestamps()                                     // heure sur chaque ligne du journal
+        buildDiscarder(logRotator(numToKeepStr: '10'))   // garde les 10 derniers builds
+        disableConcurrentBuilds()                        // un seul build à la fois (mémoire limitée)
+        timeout(time: 30, unit: 'MINUTES')
+    }
+
+    environment {
+        REGISTRY   = '192.168.255.129:8082'              // registre Docker de Nexus
+        IMAGE      = "${REGISTRY}/hr-backend"
+        IMAGE_TAG  = "${env.BUILD_NUMBER}"               // chaque build a sa propre version d'image
+        MAVEN_OPTS = '-Xmx512m'                          // limite la mémoire de Maven
+    }
+
+    stages {
+
+        stage('Compilation et tests') {
+            steps {
+                dir('hr-backend') {
+                    sh 'chmod +x mvnw'
+                    // HrBackendApplicationTests démarre toute l'application (base, Keycloak) :
+                    // il est exclu ici, les tests unitaires sont exécutés.
+                    sh """
+                        ./mvnw -B clean verify \
+                          -Dtest='!HrBackendApplicationTests' \
+                          -Dsurefire.failIfNoSpecifiedTests=false \
+                          -Dmaven.test.failure.ignore=true
+                    """
+                }
+            }
+            post {
+                always {
+                    // Rapport des tests, visible dans Jenkins
+                    junit allowEmptyResults: true, testResults: 'hr-backend/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Archivage du WAR') {
+            steps {
+                archiveArtifacts artifacts: 'hr-backend/target/hr-backend.war', fingerprint: true
+            }
+        }
+
+        stage('Image Docker') {
+            steps {
+                dir('hr-backend') {
+                    sh 'docker build -t "$IMAGE:$IMAGE_TAG" -t "$IMAGE:latest" .'
+                }
+            }
+        }
+
+        stage('Envoi vers Nexus') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'nexus-docker',
+                                                  usernameVariable: 'NEXUS_USER',
+                                                  passwordVariable: 'NEXUS_PWD')]) {
+                    sh '''
+                        echo "$NEXUS_PWD" | docker login "$REGISTRY" -u "$NEXUS_USER" --password-stdin
+                        docker push "$IMAGE:$IMAGE_TAG"
+                        docker push "$IMAGE:latest"
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Nettoyage : déconnexion du registre et suppression des images locales (place disque)
+            sh 'docker logout "$REGISTRY" || true'
+            sh 'docker rmi "$IMAGE:$IMAGE_TAG" "$IMAGE:latest" || true'
+        }
+        success {
+            echo "Image publiée dans Nexus : ${IMAGE}:${IMAGE_TAG}"
+        }
+        unstable {
+            echo 'Des tests ont échoué : consultez l\'onglet "Test Result" du build.'
+        }
+    }
+}
