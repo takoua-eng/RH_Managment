@@ -1,0 +1,42 @@
+# =====================================================================
+# Frontend Angular servi par Nginx
+# =====================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: hr-frontend
+  namespace: hr-platform
+spec:
+  selector:
+    app: hr-frontend
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hr-frontend
+  namespace: hr-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hr-frontend
+  template:
+    metadata:
+      labels:
+        app: hr-frontend
+    spec:
+      containers:
+        - name: hr-frontend
+          image: 192.168.255.129:8082/hr-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { memory: 128Mi }
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
+            periodSeconds: 10

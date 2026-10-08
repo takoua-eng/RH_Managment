@@ -1,0 +1,61 @@
+# =====================================================================
+# Microservice IA : analyse des CV et questions d'entretien
+# =====================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: cv-matcher
+  namespace: hr-platform
+spec:
+  selector:
+    app: cv-matcher
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cv-matcher
+  namespace: hr-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cv-matcher
+  template:
+    metadata:
+      labels:
+        app: cv-matcher
+    spec:
+      containers:
+        - name: cv-matcher
+          image: 192.168.255.129:8082/cv-matcher:latest
+          imagePullPolicy: Always
+          env:
+            - { name: UPLOAD_DIR, value: /data/uploads }
+            - { name: HF_HUB_OFFLINE, value: "1" }
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: AI_API_KEY }
+          ports:
+            - containerPort: 8000
+          resources:
+            requests: { cpu: 200m, memory: 768Mi }
+            limits:   { memory: 1536Mi }
+          # Chargement du modèle de langue au démarrage
+          startupProbe:
+            tcpSocket: { port: 8000 }
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            tcpSocket: { port: 8000 }
+            periodSeconds: 10
+          volumeMounts:
+            - name: uploads
+              mountPath: /data/uploads
+              readOnly: true          # l'IA lit les CV, elle ne les modifie jamais
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: uploads

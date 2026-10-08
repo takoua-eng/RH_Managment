@@ -1,0 +1,81 @@
+# =====================================================================
+# Keycloak 26.6.4 (même version que sur le PC) avec import du realm
+# Accessible via l'Ingress sur http://192.168.255.136:30080/auth
+# =====================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: hr-platform
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: hr-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.6.4
+          # --import-realm : importe hr-realm au premier démarrage (ignoré s'il existe déjà)
+          args: ["start", "--import-realm"]
+          env:
+            # Base de données
+            - { name: KC_DB, value: postgres }
+            - { name: KC_DB_URL, value: "jdbc:postgresql://postgres:5432/keycloak" }
+            - { name: KC_DB_USERNAME, value: keycloak }
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: KEYCLOAK_DB_PASSWORD }
+            # Compte administrateur de la console
+            - { name: KC_BOOTSTRAP_ADMIN_USERNAME, value: admin }
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: KEYCLOAK_ADMIN_PASSWORD }
+            # Adresse publique unique : l'émetteur (issuer) des jetons sera toujours le même
+            - { name: KC_HOSTNAME, value: "http://192.168.255.136:30080/auth" }
+            - { name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC, value: "true" }
+            - { name: KC_HTTP_RELATIVE_PATH, value: /auth }
+            - { name: KC_HTTP_ENABLED, value: "true" }
+            - { name: KC_PROXY_HEADERS, value: xforwarded }
+            # Une seule instance : cache local, et sondes de santé
+            - { name: KC_CACHE, value: local }
+            - { name: KC_HEALTH_ENABLED, value: "true" }
+          ports:
+            - { name: http, containerPort: 8080 }
+            - { name: management, containerPort: 9000 }
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits:   { memory: 1Gi }
+          # Le premier démarrage est long (préparation + import) : jusqu'à 10 minutes
+          startupProbe:
+            httpGet: { path: /auth/health/started, port: management }
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: { path: /auth/health/ready, port: management }
+            periodSeconds: 10
+          volumeMounts:
+            - name: realm
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+      volumes:
+        - name: realm
+          secret:
+            secretName: keycloak-realm

@@ -1,0 +1,93 @@
+# =====================================================================
+# Backend RH : Spring Boot packagé en WAR, exécuté dans Tomcat
+# =====================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hr-backend-config
+  namespace: hr-platform
+data:
+  DB_URL: "jdbc:postgresql://postgres:5432/hr_management"
+  DB_USERNAME: "hr_uuser"
+  DDL_AUTO: "update"
+  # Keycloak : adresse interne pour les échanges serveur à serveur...
+  KEYCLOAK_URL: "http://keycloak:8080/auth"
+  KEYCLOAK_REALM: "hr-realm"
+  KEYCLOAK_CLIENT_ID: "hr-angular"
+  # ... mais l'émetteur des jetons est l'adresse publique
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "http://192.168.255.136:30080/auth/realms/hr-realm"
+  AI_SERVICE_URL: "http://cv-matcher:8000"
+  UPLOAD_DIR: "/data/uploads"
+  ALLOWED_ORIGINS: "http://192.168.255.136:30080"
+  CATALINA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hr-backend
+  namespace: hr-platform
+spec:
+  selector:
+    app: hr-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hr-backend
+  namespace: hr-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hr-backend
+  template:
+    metadata:
+      labels:
+        app: hr-backend
+    spec:
+      containers:
+        - name: hr-backend
+          image: 192.168.255.129:8082/hr-backend:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: hr-backend-config
+          # Uniquement les secrets dont le backend a besoin
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: DB_PASSWORD }
+            - name: AI_API_KEY
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: AI_API_KEY }
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: MAIL_USERNAME }
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: MAIL_PASSWORD }
+            - name: MAIL_FROM
+              valueFrom:
+                secretKeyRef: { name: hr-secrets, key: MAIL_FROM }
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits:   { memory: 1Gi }
+          startupProbe:
+            tcpSocket: { port: 8080 }
+            periodSeconds: 10
+            failureThreshold: 40
+          readinessProbe:
+            tcpSocket: { port: 8080 }
+            periodSeconds: 10
+          volumeMounts:
+            - name: uploads
+              mountPath: /data/uploads
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: uploads
