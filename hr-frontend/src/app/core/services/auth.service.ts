@@ -29,7 +29,7 @@ export interface TokenResponse {
   token_type?: string;
 }
 
-const BACKEND_URL = `${environment.apiUrl}/api`;
+const BACKEND_URL = environment.apiUrl;            // → /api (cluster) or http://localhost:8087/api (PC)
 const ACCESS_TOKEN_KEY = 'hr_access_token';
 const REFRESH_TOKEN_KEY = 'hr_refresh_token';
 
