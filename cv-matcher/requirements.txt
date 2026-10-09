@@ -6,7 +6,7 @@ python-docx
 langdetect
 sentence-transformers
 scikit-learn
-xgboost
+xgboost-cpu
 joblib
 pandas
 pytesseract

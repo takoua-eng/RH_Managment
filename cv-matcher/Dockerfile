@@ -1,17 +1,18 @@
 FROM python:3.11-slim
 
 WORKDIR /app
-
+# syntax=docker/dockerfile:1
 # OCR pour les CV scannés (français + anglais)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         tesseract-ocr tesseract-ocr-fra tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
 # PyTorch CPU d'abord : image beaucoup plus légère
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install torch --index-url https://download.pytorch.org/whl/cpu
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 # Télécharge le modèle pendant la construction de l'image
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
 
