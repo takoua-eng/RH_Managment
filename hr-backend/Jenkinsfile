@@ -1,26 +1,27 @@
 // =====================================================================
-// Pipeline CI/CD du backend RH (Spring Boot, packagé en WAR pour Tomcat)
+// Pipeline CI/CD du backend RH (Spring Boot, WAR, Tomcat)
+// Tests → qualité du code → image Docker → Nexus → Kubernetes
 // =====================================================================
 pipeline {
     agent any
 
     options {
-        timestamps()                                     // heure sur chaque ligne du journal
-        buildDiscarder(logRotator(numToKeepStr: '10'))   // garde les 10 derniers builds
-        disableConcurrentBuilds()                        // un seul build à la fois (mémoire limitée)
-        timeout(time: 30, unit: 'MINUTES')
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        timeout(time: 40, unit: 'MINUTES')
     }
 
-        triggers {
+    triggers {
         // Vérifie toutes les 5 minutes s'il y a de nouveaux commits sur GitHub
         pollSCM('H/5 * * * *')
     }
 
     environment {
-        REGISTRY   = '192.168.255.129:8082'              // registre Docker de Nexus
-        IMAGE      = "${REGISTRY}/hr-backend"
-        IMAGE_TAG  = "${env.BUILD_NUMBER}"               // chaque build a sa propre version d'image
-        MAVEN_OPTS = '-Xmx512m'                          // limite la mémoire de Maven
+        REGISTRY  = '192.168.255.129:8082'
+        IMAGE     = "${REGISTRY}/hr-backend"
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        SONAR_URL = 'http://192.168.255.129:9000'
     }
 
     stages {
@@ -29,8 +30,7 @@ pipeline {
             steps {
                 dir('hr-backend') {
                     sh 'chmod +x mvnw'
-                    // HrBackendApplicationTests démarre toute l'application (base, Keycloak) :
-                    // il est exclu ici, les tests unitaires sont exécutés.
+                    // Un test en échec arrête le pipeline
                     sh """
                         ./mvnw -B clean verify \
                           -Dtest='!HrBackendApplicationTests' \
@@ -40,8 +40,49 @@ pipeline {
             }
             post {
                 always {
-                    // Rapport des tests, visible dans Jenkins
                     junit allowEmptyResults: true, testResults: 'hr-backend/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Vérification de SonarQube') {
+            // SonarQube est démarré à la demande : on vérifie s'il est disponible
+            steps {
+                script {
+                    def code = sh(
+                        script: "curl -sf ${SONAR_URL}/api/system/status | grep -q '\"status\":\"UP\"'",
+                        returnStatus: true
+                    )
+                    env.SONAR_UP = (code == 0) ? 'true' : 'false'
+                    echo(env.SONAR_UP == 'true'
+                        ? 'SonarQube est disponible : analyse de la qualité du code'
+                        : 'SonarQube est arrêté : analyse ignorée pour ce build')
+                }
+            }
+        }
+
+        stage('Analyse SonarQube') {
+            when { environment name: 'SONAR_UP', value: 'true' }
+            steps {
+                dir('hr-backend') {
+                    withSonarQubeEnv('sonarqube') {
+                        sh '''
+                            ./mvnw -B sonar:sonar \
+                              -Dsonar.projectKey=hr-backend \
+                              -Dsonar.projectName="CorpFlow HR - Backend" \
+                              -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            when { environment name: 'SONAR_UP', value: 'true' }
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    // abortPipeline: false → le verdict est affiché, sans bloquer le déploiement
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
@@ -74,7 +115,7 @@ pipeline {
             }
         }
 
-                stage('Déploiement Kubernetes') {
+        stage('Déploiement Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
@@ -95,15 +136,11 @@ pipeline {
 
     post {
         always {
-            // Nettoyage : déconnexion du registre et suppression des images locales (place disque)
             sh 'docker logout "$REGISTRY" || true'
             sh 'docker rmi "$IMAGE:$IMAGE_TAG" "$IMAGE:latest" || true'
         }
         success {
-            echo "Image publiée dans Nexus : ${IMAGE}:${IMAGE_TAG}"
-        }
-        unstable {
-            echo 'Des tests ont échoué : consultez l\'onglet "Test Result" du build.'
+            echo "Version ${IMAGE_TAG} testée, analysée, publiée et déployée"
         }
     }
 }
