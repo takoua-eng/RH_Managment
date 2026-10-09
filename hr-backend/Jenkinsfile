@@ -64,19 +64,22 @@ pipeline {
         stage('Analyse SonarQube') {
             when { environment name: 'SONAR_UP', value: 'true' }
             steps {
-                dir('hr-backend') {
-                    withSonarQubeEnv('sonarqube') {
-                        sh '''
-                            ./mvnw -B sonar:sonar \
-                              -Dsonar.projectKey=hr-backend \
-                              -Dsonar.projectName="CorpFlow HR - Backend" \
-                              -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-                        '''
+                // Un problème d'analyse ne doit pas bloquer la livraison :
+                // l'étape passe en rouge, le build en orange (UNSTABLE), et le pipeline continue
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    dir('hr-backend') {
+                        withSonarQubeEnv('sonarqube') {
+                            sh '''
+                                ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                                  -Dsonar.projectKey=hr-backend \
+                                  -Dsonar.projectName="CorpFlow HR - Backend" \
+                                  -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                            '''
+                        }
                     }
                 }
             }
         }
-
         stage('Quality Gate') {
             when { environment name: 'SONAR_UP', value: 'true' }
             steps {
