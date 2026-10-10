@@ -14,10 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collection;
+
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
@@ -166,8 +168,12 @@ public class NotificationService {
 
     private String calculateTimeAgo(LocalDateTime createdAt) {
         if (createdAt == null) return "À l'instant";
-        
-        Duration duration = Duration.between(createdAt, LocalDateTime.now());
+
+        // Les deux dates sont placées dans le même fuseau horaire avant le calcul de l'écart
+        ZoneId zone = ZoneId.systemDefault();
+        Duration duration = Duration.between(createdAt.atZone(zone), ZonedDateTime.now(zone));
+        if (duration.isNegative()) return "À l'instant";
+
         long minutes = duration.toMinutes();
         long hours = duration.toHours();
         long days = duration.toDays();

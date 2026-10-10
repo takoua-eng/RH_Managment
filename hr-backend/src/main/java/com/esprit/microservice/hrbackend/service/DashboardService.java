@@ -48,8 +48,7 @@ public class DashboardService {
         String deptFilter = (departmentParam != null && !departmentParam.isBlank()) ? departmentParam.trim() : null;
 
         LocalDate today = LocalDate.now();
-        LocalDate startDate = today.withDayOfMonth(1).minusMonths(months - 1);
-
+        LocalDate startDate = today.withDayOfMonth(1).minusMonths(months - 1L);
         // 1. KPIs
         KpiStats kpis = buildKpiStats(today, startDate, deptFilter);
 
@@ -193,8 +192,7 @@ public class DashboardService {
         Map<String, Long> appsMap = new HashMap<>();
         Map<String, Long> hiredMap = new HashMap<>();
 
-        LocalDate startDate = today.withDayOfMonth(1).minusMonths(months - 1);
-
+        LocalDate startDate = today.withDayOfMonth(1).minusMonths(months - 1L);
         try {
             List<Object[]> appsRes = dashboardRepository.findMonthlyApplicationsCount(startDate, deptFilter);
             for (Object[] row : appsRes) {

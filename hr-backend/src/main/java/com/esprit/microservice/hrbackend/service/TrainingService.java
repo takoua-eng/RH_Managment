@@ -99,8 +99,7 @@ public class TrainingService {
             if (matcher.find()) {
                 int days = Integer.parseInt(matcher.group(1));
                 if (days > 0) {
-                    return startDate.plusDays(days - 1);
-                }
+                    return startDate.plusDays(days - 1L);                }
             }
         } catch (Exception ignored) {}
         return startDate;
