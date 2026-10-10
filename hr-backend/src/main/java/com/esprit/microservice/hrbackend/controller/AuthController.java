@@ -4,16 +4,26 @@ import com.esprit.microservice.hrbackend.dto.AuthRequestDTO;
 import com.esprit.microservice.hrbackend.dto.RefreshRequestDTO;
 import com.esprit.microservice.hrbackend.dto.TokenResponseDTO;
 import com.esprit.microservice.hrbackend.service.AuthService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.Map;
 
+/**
+ * Authentification via Keycloak : connexion, rafraîchissement du jeton, déconnexion.
+ *
+ * Les détails techniques des erreurs (réponses de Keycloak, messages d'exception) sont
+ * écrits dans les journaux du serveur, jamais renvoyés au navigateur.
+ */
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
+    private static final String ERROR = "error";
 
     private final AuthService authService;
 
@@ -22,52 +32,61 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequestDTO request) {
-        try {
-            if (request.getUsername() == null || request.getUsername().isBlank() ||
-                request.getPassword() == null || request.getPassword().isBlank()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Nom d'utilisateur et mot de passe requis"));
-            }
+    public ResponseEntity<Object> login(@RequestBody AuthRequestDTO request) {
+        if (request.getUsername() == null || request.getUsername().isBlank()
+                || request.getPassword() == null || request.getPassword().isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(ERROR, "Nom d'utilisateur et mot de passe requis"));
+        }
 
+        try {
             TokenResponseDTO tokenResponse = authService.login(request.getUsername(), request.getPassword());
             return ResponseEntity.ok(tokenResponse);
-        } catch (HttpStatusCodeException e) {
-            System.err.println("Keycloak Auth Error status: " + e.getStatusCode() + " body: " + e.getResponseBodyAsString());
+
+        } catch (HttpClientErrorException e) {
+            // Keycloak a refusé la connexion (identifiants incorrects, compte désactivé…)
+            log.warn("Connexion refusée par Keycloak pour '{}' : statut {}", request.getUsername(), e.getStatusCode());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Identifiants invalides ou accès refusé", "details", e.getResponseBodyAsString()));
+                    .body(Map.of(ERROR, "Identifiants invalides"));
+
         } catch (Exception e) {
-            System.err.println("Keycloak Auth Exception: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Échec de l'authentification: " + e.getMessage()));
+            // Keycloak injoignable ou erreur inattendue : ce n'est pas la faute de l'utilisateur
+            log.error("Service d'authentification indisponible", e);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of(ERROR, "Service d'authentification momentanément indisponible"));
         }
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody RefreshRequestDTO request) {
-        try {
-            if (request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Refresh token requis"));
-            }
+    public ResponseEntity<Object> refresh(@RequestBody RefreshRequestDTO request) {
+        if (request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(ERROR, "Refresh token requis"));
+        }
 
+        try {
             TokenResponseDTO tokenResponse = authService.refreshToken(request.getRefreshToken());
             return ResponseEntity.ok(tokenResponse);
         } catch (Exception e) {
+            log.info("Rafraîchissement du jeton refusé : {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Impossible de rafraîchir le token"));
+                    .body(Map.of(ERROR, "Impossible de rafraîchir le token"));
         }
     }
 
+    /**
+     * La déconnexion côté navigateur a toujours lieu (le frontend efface ses jetons).
+     * Si la fermeture de la session Keycloak échoue (jeton déjà expiré, par exemple),
+     * l'incident est seulement journalisé : la réponse reste 204 No Content.
+     */
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestBody(required = false) RefreshRequestDTO request) {
+    public ResponseEntity<Void> logout(@RequestBody(required = false) RefreshRequestDTO request) {
+        String refreshToken = request != null ? request.getRefreshToken() : null;
         try {
-            String refreshToken = request != null ? request.getRefreshToken() : null;
             authService.logout(refreshToken);
-            return ResponseEntity.ok(Map.of("message", "Déconnexion réussie"));
         } catch (Exception e) {
-            // Even if Keycloak logout fails or token expired, complete local logout cleanly
-            return ResponseEntity.ok(Map.of("message", "Déconnexion effectuée"));
+            log.info("Fermeture de la session Keycloak impossible (jeton probablement expiré) : {}", e.getMessage());
         }
+        return ResponseEntity.noContent().build();
     }
 }
