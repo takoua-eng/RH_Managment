@@ -20,6 +20,13 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Notifications des utilisateurs : enregistrement, envoi en temps réel et consultation.
+ *
+ * Les méthodes publiques portent la transaction. Elles délèguent le travail à des méthodes
+ * privées sans annotation : un appel interne entre deux méthodes transactionnelles
+ * contournerait le proxy de Spring, et donc la gestion de la transaction.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,51 +43,19 @@ public class NotificationService {
     // ENVOI
     // =========================================================
 
-    /**
-     * Enregistre la notification, puis l'envoie en temps réel (WebSocket)
-     * si le destinataire a un compte Keycloak.
-     */
     @Transactional
     public void notify(Long recipientEmployeeId, NotificationType type, String text, String link) {
-        if (recipientEmployeeId == null) {
-            log.warn("Cannot send notification because recipientEmployeeId is null. Type: {}, Text: {}", type, text);
-            return;
-        }
-
-        Notification notification = Notification.builder()
-                .recipientId(recipientEmployeeId)
-                .text(text)
-                .icon(resolveIcon(type))
-                .type(type)
-                .link(link)
-                .unread(true)
-                .build();
-
-        Notification saved = notificationRepository.save(notification);
-
-        // Envoi en temps réel : un échec n'empêche pas l'enregistrement de la notification
-        try {
-            employeeRepository.findById(recipientEmployeeId).ifPresent(employee -> {
-                String keycloakId = employee.getKeycloakId();
-                if (keycloakId != null && !keycloakId.isBlank()) {
-                    NotificationDTO dto = mapToDTO(saved);
-                    messagingTemplate.convertAndSendToUser(keycloakId, "/queue/notifications", dto);
-                    log.debug("[WebSocket] Notification sent to user {}: {}", keycloakId, dto.getText());
-                }
-            });
-        } catch (Exception e) {
-            log.debug("[WebSocket] Notification delivery skipped/failed for recipient {}: {}", recipientEmployeeId, e.getMessage());
-        }
+        envoyer(recipientEmployeeId, type, text, link);
     }
 
     @Transactional
     public void notifyManager(Long managerId, String text, NotificationType type) {
-        notify(managerId, type, text, null);
+        envoyer(managerId, type, text, null);
     }
 
     @Transactional
     public void notifyManager(Long managerId, String text, NotificationType type, String link) {
-        notify(managerId, type, text, link);
+        envoyer(managerId, type, text, link);
     }
 
     /** Notifie tous les employés ayant l'un des rôles donnés, sauf éventuellement l'auteur de l'action. */
@@ -98,8 +73,44 @@ public class NotificationService {
 
         for (Employee emp : recipients) {
             if (excludeEmployeeId == null || !excludeEmployeeId.equals(emp.getId())) {
-                notify(emp.getId(), type, text, link);
+                envoyer(emp.getId(), type, text, link);
             }
+        }
+    }
+
+    /**
+     * Enregistre la notification, puis l'envoie en temps réel par WebSocket
+     * si le destinataire possède un compte Keycloak.
+     */
+    private void envoyer(Long recipientEmployeeId, NotificationType type, String text, String link) {
+        if (recipientEmployeeId == null) {
+            log.warn("Cannot send notification because recipientEmployeeId is null. Type: {}, Text: {}", type, text);
+            return;
+        }
+
+        Notification notification = Notification.builder()
+                .recipientId(recipientEmployeeId)
+                .text(text)
+                .icon(resolveIcon(type))
+                .type(type)
+                .link(link)
+                .unread(true)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+
+        // Un échec de l'envoi en temps réel n'annule pas l'enregistrement de la notification
+        try {
+            employeeRepository.findById(recipientEmployeeId).ifPresent(employee -> {
+                String keycloakId = employee.getKeycloakId();
+                if (keycloakId != null && !keycloakId.isBlank()) {
+                    NotificationDTO dto = mapToDTO(saved);
+                    messagingTemplate.convertAndSendToUser(keycloakId, "/queue/notifications", dto);
+                    log.debug("[WebSocket] Notification sent to user {}: {}", keycloakId, dto.getText());
+                }
+            });
+        } catch (Exception e) {
+            log.debug("[WebSocket] Notification delivery skipped/failed for recipient {}: {}", recipientEmployeeId, e.getMessage());
         }
     }
 
@@ -125,11 +136,15 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public List<NotificationDTO> getNotifications(Long recipientId) {
-        return getNotifications(recipientId, LIMITE_PAR_DEFAUT);
+        return lister(recipientId, LIMITE_PAR_DEFAUT);
     }
 
     @Transactional(readOnly = true)
     public List<NotificationDTO> getNotifications(Long recipientId, int limit) {
+        return lister(recipientId, limit);
+    }
+
+    private List<NotificationDTO> lister(Long recipientId, int limit) {
         return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(recipientId).stream()
                 .limit(limit > 0 ? limit : LIMITE_PAR_DEFAUT)
                 .map(this::mapToDTO)
@@ -180,7 +195,7 @@ public class NotificationService {
                 .build();
     }
 
-    /** Ancienneté affichée dans la cloche : « À l'instant », « Il y a 5 min », « Hier »… */
+    /** Texte d'ancienneté affiché dans la cloche des notifications. */
     private String calculateTimeAgo(LocalDateTime createdAt) {
         if (createdAt == null) return A_L_INSTANT;
 
@@ -188,8 +203,8 @@ public class NotificationService {
         ZoneId zone = ZoneId.systemDefault();
         Duration duration = Duration.between(createdAt.atZone(zone), ZonedDateTime.now(zone));
 
+        // Un écart négatif, dû à des horloges décalées, compte comme une notification toute récente
         long minutes = duration.toMinutes();
-        // Écart négatif (horloges décalées) ou moins d'une minute : notification toute récente
         if (minutes < 1) return A_L_INSTANT;
 
         long hours = duration.toHours();
