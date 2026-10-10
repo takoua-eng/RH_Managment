@@ -28,6 +28,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 @RequiredArgsConstructor
 public class NotificationService {
 
+
+    private static final String A_L_INSTANT = "À l'instant";
     private final NotificationRepository notificationRepository;
     private final EmployeeRepository employeeRepository;
     private final SimpMessagingTemplate messagingTemplate;
@@ -167,18 +169,19 @@ public class NotificationService {
     }
 
     private String calculateTimeAgo(LocalDateTime createdAt) {
-        if (createdAt == null) return "À l'instant";
+        if (createdAt == null) return A_L_INSTANT;
 
         // Les deux dates sont placées dans le même fuseau horaire avant le calcul de l'écart
         ZoneId zone = ZoneId.systemDefault();
         Duration duration = Duration.between(createdAt.atZone(zone), ZonedDateTime.now(zone));
-        if (duration.isNegative()) return "À l'instant";
 
         long minutes = duration.toMinutes();
+        // Écart négatif (horloges décalées) ou moins d'une minute : notification toute récente
+        if (minutes < 1) return A_L_INSTANT;
+
         long hours = duration.toHours();
         long days = duration.toDays();
 
-        if (minutes < 1) return "À l'instant";
         if (minutes < 60) return "Il y a " + minutes + " min";
         if (hours < 24) return "Il y a " + hours + " heure(s)";
         if (days == 1) return "Hier";
