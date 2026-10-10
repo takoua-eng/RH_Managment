@@ -9,31 +9,37 @@ import com.esprit.microservice.hrbackend.repository.EmployeeRepository;
 import com.esprit.microservice.hrbackend.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
 
-
     private static final String A_L_INSTANT = "À l'instant";
+    private static final int LIMITE_PAR_DEFAUT = 20;
+
     private final NotificationRepository notificationRepository;
     private final EmployeeRepository employeeRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
+    // =========================================================
+    // ENVOI
+    // =========================================================
+
+    /**
+     * Enregistre la notification, puis l'envoie en temps réel (WebSocket)
+     * si le destinataire a un compte Keycloak.
+     */
     @Transactional
     public void notify(Long recipientEmployeeId, NotificationType type, String text, String link) {
         if (recipientEmployeeId == null) {
@@ -41,12 +47,10 @@ public class NotificationService {
             return;
         }
 
-        String icon = resolveIcon(type);
-
         Notification notification = Notification.builder()
                 .recipientId(recipientEmployeeId)
                 .text(text)
-                .icon(icon)
+                .icon(resolveIcon(type))
                 .type(type)
                 .link(link)
                 .unread(true)
@@ -54,17 +58,13 @@ public class NotificationService {
 
         Notification saved = notificationRepository.save(notification);
 
-        // Attempt WebSocket real-time delivery
+        // Envoi en temps réel : un échec n'empêche pas l'enregistrement de la notification
         try {
             employeeRepository.findById(recipientEmployeeId).ifPresent(employee -> {
                 String keycloakId = employee.getKeycloakId();
-                if (keycloakId != null && !keycloakId.trim().isEmpty()) {
+                if (keycloakId != null && !keycloakId.isBlank()) {
                     NotificationDTO dto = mapToDTO(saved);
-                    messagingTemplate.convertAndSendToUser(
-                            keycloakId,
-                            "/queue/notifications",
-                            dto
-                    );
+                    messagingTemplate.convertAndSendToUser(keycloakId, "/queue/notifications", dto);
                     log.debug("[WebSocket] Notification sent to user {}: {}", keycloakId, dto.getText());
                 }
             });
@@ -83,6 +83,7 @@ public class NotificationService {
         notify(managerId, type, text, link);
     }
 
+    /** Notifie tous les employés ayant l'un des rôles donnés, sauf éventuellement l'auteur de l'action. */
     @Transactional
     public void notifyRoles(Set<Role> roles, NotificationType type, String text, String link, Long excludeEmployeeId) {
         if (roles == null || roles.isEmpty()) {
@@ -96,10 +97,9 @@ public class NotificationService {
         }
 
         for (Employee emp : recipients) {
-            if (excludeEmployeeId != null && excludeEmployeeId.equals(emp.getId())) {
-                continue;
+            if (excludeEmployeeId == null || !excludeEmployeeId.equals(emp.getId())) {
+                notify(emp.getId(), type, text, link);
             }
-            notify(emp.getId(), type, text, link);
         }
     }
 
@@ -119,17 +119,21 @@ public class NotificationService {
         };
     }
 
+    // =========================================================
+    // CONSULTATION
+    // =========================================================
+
     @Transactional(readOnly = true)
     public List<NotificationDTO> getNotifications(Long recipientId) {
-        return getNotifications(recipientId, 20);
+        return getNotifications(recipientId, LIMITE_PAR_DEFAUT);
     }
 
     @Transactional(readOnly = true)
     public List<NotificationDTO> getNotifications(Long recipientId, int limit) {
         return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(recipientId).stream()
-                .limit(limit > 0 ? limit : 20)
+                .limit(limit > 0 ? limit : LIMITE_PAR_DEFAUT)
                 .map(this::mapToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -138,12 +142,16 @@ public class NotificationService {
         return notificationRepository.countByRecipientIdAndUnreadTrue(recipientId);
     }
 
+    // =========================================================
+    // LECTURE
+    // =========================================================
+
     @Transactional
     public void markAllAsRead(Long recipientId) {
         List<Notification> unread = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(recipientId).stream()
                 .filter(Notification::isUnread)
-                .collect(Collectors.toList());
-        
+                .toList();
+
         unread.forEach(n -> n.setUnread(false));
         notificationRepository.saveAll(unread);
     }
@@ -155,6 +163,10 @@ public class NotificationService {
             notificationRepository.save(n);
         });
     }
+
+    // =========================================================
+    // CONVERSION
+    // =========================================================
 
     private NotificationDTO mapToDTO(Notification n) {
         return NotificationDTO.builder()
@@ -168,6 +180,7 @@ public class NotificationService {
                 .build();
     }
 
+    /** Ancienneté affichée dans la cloche : « À l'instant », « Il y a 5 min », « Hier »… */
     private String calculateTimeAgo(LocalDateTime createdAt) {
         if (createdAt == null) return A_L_INSTANT;
 
