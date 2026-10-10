@@ -29,7 +29,12 @@ import java.util.Map;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private static final String[] TOUS_LES_ROLES = {"ADMIN", "RH", "MANAGER", "EMPLOYEE"};
+    // Rôles Keycloak (sans le préfixe ROLE_, ajouté par hasRole / hasAnyRole)
+    private static final String ADMIN = "ADMIN";
+    private static final String RH = "RH";
+    private static final String MANAGER = "MANAGER";
+    private static final String EMPLOYEE = "EMPLOYEE";
+    private static final String[] TOUS_LES_ROLES = {ADMIN, RH, MANAGER, EMPLOYEE};
 
     @Value("${app.allowed-origins}")
     private String[] allowedOrigins;
@@ -64,12 +69,12 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**").permitAll()
 
                         // ===== Administration et statistiques =====
-                        .requestMatchers("/api/admin/dashboard/**").hasAnyRole("ADMIN", "RH")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/dashboard/**").hasAnyRole(ADMIN, RH)
+                        .requestMatchers("/api/admin/**").hasRole(ADMIN)
 
                         // ===== Espaces par rôle =====
-                        .requestMatchers("/api/rh/**").hasAnyRole("ADMIN", "RH")
-                        .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/api/rh/**").hasAnyRole(ADMIN, RH)
+                        .requestMatchers("/api/manager/**").hasAnyRole(ADMIN, MANAGER)
 
                         // ===== Fonctionnalités communes (contrôles fins par @PreAuthorize) =====
                         .requestMatchers(
