@@ -76,7 +76,6 @@ pipeline {
                 }
             }
         }
-
         stage('Analyse SonarQube') {
             when { environment name: 'SONAR_UP', value: 'true' }
             steps {
@@ -88,27 +87,31 @@ pipeline {
                                   -u "$(id -u):$(id -g)" \
                                   -e SONAR_HOST_URL="$SONAR_HOST_URL" \
                                   -e SONAR_TOKEN="$SONAR_AUTH_TOKEN" \
-                                  -e SONAR_USER_HOME=/tmp/.sonar \
+                                  -e SONAR_USER_HOME=/usr/src/.sonar \
                                   -v "$PWD:/usr/src" \
                                   sonarsource/sonar-scanner-cli \
                                   -Dsonar.projectKey=cv-matcher \
                                   -Dsonar.projectName="CorpFlow HR - Microservice IA" \
+                                  -Dsonar.working.directory=/usr/src/.scannerwork \
                                   -Dsonar.sources=app \
                                   -Dsonar.tests=tests \
                                   -Dsonar.python.version=3.11 \
                                   -Dsonar.python.coverage.reportPaths=coverage.xml
                             '''
                         }
+                        script { env.SONAR_ANALYSE_OK = 'true' }
                     }
                 }
             }
         }
 
         stage('Quality Gate') {
-            when { environment name: 'SONAR_UP', value: 'true' }
+            when { environment name: 'SONAR_ANALYSE_OK', value: 'true' }
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: false
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: false
+                    }
                 }
             }
         }
