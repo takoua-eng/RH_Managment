@@ -99,7 +99,7 @@ public class SecurityConfig {
      * Convertit les rôles Keycloak (realm_access.roles) en rôles Spring Security.
      * Exemple : EMPLOYEE → ROLE_EMPLOYEE
      */
-    private JwtAuthenticationConverter jwtAuthConverter() {
+     JwtAuthenticationConverter jwtAuthConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(this::extractAuthorities);
         return converter;
