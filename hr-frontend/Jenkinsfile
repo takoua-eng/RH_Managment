@@ -1,5 +1,6 @@
 // =====================================================================
 // Pipeline CI/CD du frontend (Angular compilé avec Node.js, servi par Nginx)
+// Qualité du code → image Docker → test de fumée → Nexus → Kubernetes
 // =====================================================================
 pipeline {
     agent any
@@ -10,19 +11,72 @@ pipeline {
         disableConcurrentBuilds()
         timeout(time: 40, unit: 'MINUTES')
     }
-        triggers {
+
+    triggers {
         // Vérifie toutes les 5 minutes s'il y a de nouveaux commits sur GitHub
         pollSCM('H/5 * * * *')
     }
 
     environment {
-        REGISTRY  = '192.168.255.129:8082'
-        IMAGE     = "${REGISTRY}/hr-frontend"
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        REGISTRY       = '192.168.255.129:8082'
+        IMAGE          = "${REGISTRY}/hr-frontend"
+        IMAGE_TAG      = "${env.BUILD_NUMBER}"
         TEST_CONTAINER = "hr-frontend-test-${env.BUILD_NUMBER}"
+        SONAR_URL      = 'http://192.168.255.129:9000'
     }
 
     stages {
+
+        stage('Vérification de SonarQube') {
+            // SonarQube est démarré à la demande : on vérifie s'il est disponible
+            steps {
+                script {
+                    def code = sh(
+                        script: "curl -sf ${SONAR_URL}/api/system/status | grep -q '\"status\":\"UP\"'",
+                        returnStatus: true
+                    )
+                    env.SONAR_UP = (code == 0) ? 'true' : 'false'
+                    echo(env.SONAR_UP == 'true'
+                        ? 'SonarQube est disponible : analyse de la qualité du code'
+                        : 'SonarQube est arrêté : analyse ignorée pour ce build')
+                }
+            }
+        }
+
+        stage('Analyse SonarQube') {
+            when { environment name: 'SONAR_UP', value: 'true' }
+            steps {
+                // Un problème d'analyse ne bloque pas la livraison (build orange, pipeline poursuivi)
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    dir('hr-frontend') {
+                        withSonarQubeEnv('sonarqube') {
+                            sh '''
+                                docker run --rm \
+                                  -u "$(id -u):$(id -g)" \
+                                  -e SONAR_HOST_URL="$SONAR_HOST_URL" \
+                                  -e SONAR_TOKEN="$SONAR_AUTH_TOKEN" \
+                                  -e SONAR_USER_HOME=/tmp/.sonar \
+                                  -v "$PWD:/usr/src" \
+                                  sonarsource/sonar-scanner-cli \
+                                  -Dsonar.projectKey=hr-frontend \
+                                  -Dsonar.projectName="CorpFlow HR - Frontend" \
+                                  -Dsonar.sources=src \
+                                  -Dsonar.exclusions="**/*.spec.ts,**/assets/**,**/environments/**"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            when { environment name: 'SONAR_UP', value: 'true' }
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: false
+                }
+            }
+        }
 
         stage('Compilation et image Docker') {
             steps {
@@ -55,7 +109,6 @@ pipeline {
             }
             post {
                 failure {
-                    // En cas d'échec, affiche les journaux de Nginx pour comprendre
                     sh 'docker logs "$TEST_CONTAINER" || true'
                 }
                 always {
@@ -63,6 +116,7 @@ pipeline {
                 }
             }
         }
+
         stage('Envoi vers Nexus') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-docker',
@@ -76,7 +130,8 @@ pipeline {
                 }
             }
         }
-                stage('Déploiement Kubernetes') {
+
+        stage('Déploiement Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     sh '''
@@ -98,7 +153,7 @@ pipeline {
             sh 'docker rmi "$IMAGE:$IMAGE_TAG" "$IMAGE:latest" || true'
         }
         success {
-            echo "Image publiée dans Nexus : ${IMAGE}:${IMAGE_TAG}"
+            echo "Version ${IMAGE_TAG} analysée, testée, publiée et déployée"
         }
     }
 }

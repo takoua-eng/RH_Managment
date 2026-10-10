@@ -1,5 +1,6 @@
 // =====================================================================
-// Pipeline CI/CD du microservice IA (FastAPI, matching CV / offre)
+// Pipeline CI/CD du microservice IA (FastAPI, analyse CV / offre)
+// Image Docker → tests et couverture dans l'image → qualité du code → Nexus → Kubernetes
 // =====================================================================
 pipeline {
     agent any
@@ -8,18 +9,19 @@ pipeline {
         timestamps()
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
-        timeout(time: 120, unit: 'MINUTES')  // 1er build long : PyTorch + modèle de langue
+        timeout(time: 120, unit: 'MINUTES')   // 1er build long : PyTorch + modèle de langue
     }
-        triggers {
-        // Vérifie toutes les 5 minutes s'il y a de nouveaux commits sur GitHub
+
+    triggers {
         pollSCM('H/5 * * * *')
     }
 
     environment {
-        REGISTRY  = '192.168.255.129:8082'
-        IMAGE     = "${REGISTRY}/cv-matcher"
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        REGISTRY       = '192.168.255.129:8082'
+        IMAGE          = "${REGISTRY}/cv-matcher"
+        IMAGE_TAG      = "${env.BUILD_NUMBER}"
         TEST_CONTAINER = "cv-matcher-tests-${env.BUILD_NUMBER}"
+        SONAR_URL      = 'http://192.168.255.129:9000'
     }
 
     stages {
@@ -35,25 +37,78 @@ pipeline {
         stage('Tests dans l\'image') {
             steps {
                 dir('cv-matcher') {
-                    // Les tests ne sont pas dans l'image : on les monte en lecture seule,
-                    // puis on lance pytest avec les bibliothèques et le modèle de l'image.
+                    // Les tests ne sont pas dans l'image : ils sont montés en lecture seule.
+                    // pytest-cov mesure la couverture, lue ensuite par SonarQube.
                     sh '''
                         docker run --name "$TEST_CONTAINER" \
                           -v "$PWD/tests:/app/tests:ro" \
                           -e HF_HUB_OFFLINE=1 \
                           "$IMAGE:$IMAGE_TAG" \
-                          sh -c "pip install -q --no-cache-dir pytest httpx && python -m pytest -q tests --junitxml=/tmp/pytest.xml"
+                          sh -c "pip install -q --no-cache-dir pytest httpx pytest-cov && python -m pytest -q tests --junitxml=/tmp/pytest.xml --cov=app --cov-report=xml:/tmp/coverage.xml"
                     '''
                 }
             }
             post {
                 always {
-                    // Récupère le rapport des tests, puis supprime le conteneur de test
                     sh '''
                         docker cp "$TEST_CONTAINER:/tmp/pytest.xml" cv-matcher/pytest.xml || true
+                        docker cp "$TEST_CONTAINER:/tmp/coverage.xml" cv-matcher/coverage.xml || true
                         docker rm -f "$TEST_CONTAINER" || true
+                        # Le rapport désigne /app (dans l'image) : on l'adapte au dossier analysé par SonarQube
+                        sed -i 's#<source>/app</source>#<source>/usr/src</source>#' cv-matcher/coverage.xml || true
                     '''
                     junit allowEmptyResults: true, testResults: 'cv-matcher/pytest.xml'
+                }
+            }
+        }
+
+        stage('Vérification de SonarQube') {
+            steps {
+                script {
+                    def code = sh(
+                        script: "curl -sf ${SONAR_URL}/api/system/status | grep -q '\"status\":\"UP\"'",
+                        returnStatus: true
+                    )
+                    env.SONAR_UP = (code == 0) ? 'true' : 'false'
+                    echo(env.SONAR_UP == 'true'
+                        ? 'SonarQube est disponible : analyse de la qualité du code'
+                        : 'SonarQube est arrêté : analyse ignorée pour ce build')
+                }
+            }
+        }
+
+        stage('Analyse SonarQube') {
+            when { environment name: 'SONAR_UP', value: 'true' }
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    dir('cv-matcher') {
+                        withSonarQubeEnv('sonarqube') {
+                            sh '''
+                                docker run --rm \
+                                  -u "$(id -u):$(id -g)" \
+                                  -e SONAR_HOST_URL="$SONAR_HOST_URL" \
+                                  -e SONAR_TOKEN="$SONAR_AUTH_TOKEN" \
+                                  -e SONAR_USER_HOME=/tmp/.sonar \
+                                  -v "$PWD:/usr/src" \
+                                  sonarsource/sonar-scanner-cli \
+                                  -Dsonar.projectKey=cv-matcher \
+                                  -Dsonar.projectName="CorpFlow HR - Microservice IA" \
+                                  -Dsonar.sources=app \
+                                  -Dsonar.tests=tests \
+                                  -Dsonar.python.version=3.11 \
+                                  -Dsonar.python.coverage.reportPaths=coverage.xml
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            when { environment name: 'SONAR_UP', value: 'true' }
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
@@ -94,7 +149,7 @@ pipeline {
             sh 'docker rmi "$IMAGE:$IMAGE_TAG" "$IMAGE:latest" || true'
         }
         success {
-            echo "Image publiée dans Nexus : ${IMAGE}:${IMAGE_TAG}"
+            echo "Version ${IMAGE_TAG} testée, analysée, publiée et déployée"
         }
     }
 }
