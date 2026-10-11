@@ -117,13 +117,13 @@ export class AdminJobOffersComponent implements OnInit {
     this.maxSalary = null;
     if (offer.salaryRange && offer.salaryRange.includes('-')) {
       const parts = offer.salaryRange.split('-');
-      const min = parseInt(parts[0].replace(/\D/g, ''));
+      const min = Number.parseInt(parts[0].replace(/\D/g, ''));
       const max = parseInt(parts[1].replace(/\D/g, ''));
-      if (!isNaN(min)) this.minSalary = min;
-      if (!isNaN(max)) this.maxSalary = max;
+      if (!Number.isNaN(min)) this.minSalary = min;
+      if (!Number.isNaN(max)) this.maxSalary = max;
     } else if (offer.salaryRange) {
-      const val = parseInt(offer.salaryRange.replace(/\D/g, ''));
-      if (!isNaN(val)) this.minSalary = val;
+      const val = Number.parseInt(offer.salaryRange.replace(/\D/g, ''));
+      if (!Number.isNaN(val)) this.minSalary = val;
     }
 
     this.showModal = true;

@@ -78,7 +78,7 @@ export class CertificateComponent implements OnInit, OnDestroy {
 
     try {
       // Attend la fin du chargement des polices avant la capture
-      if (document.fonts?.ready) {
+       if (document.fonts) {
         await document.fonts.ready;
       }
 

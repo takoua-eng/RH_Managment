@@ -49,7 +49,7 @@ export class PublicCareersComponent implements OnInit {
     this.offers().forEach(o => {
       if (o.department?.trim()) set.add(o.department.trim());
     });
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'));
   });
 
   readonly availableContractTypes = computed(() => {
@@ -57,7 +57,7 @@ export class PublicCareersComponent implements OnInit {
     this.offers().forEach(o => {
       if (o.contractType?.trim()) set.add(o.contractType.trim());
     });
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'));
   });
 
   readonly filteredOffers = computed(() => {
@@ -426,8 +426,8 @@ export class PublicCareersComponent implements OnInit {
       .toLowerCase()
       .trim()
       .replace(/\s+/g, '-')
-      .replace(/[^\w\-]+/g, '')
-      .replace(/\-\-+/g, '-');
+      .replace(/[^\w-]+/g, '')
+      .replace(/-{2,}/g, '-');
   }
 
   getOfferSlugUrl(offer: JobOffer): string {
@@ -482,8 +482,7 @@ export class PublicCareersComponent implements OnInit {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (isNaN(diffInSeconds) || diffInSeconds < 0) return "Aujourd'hui";
-
+    if (Number.isNaN(diffInSeconds) || diffInSeconds < 0) return "Aujourd'hui";
     const days = Math.floor(diffInSeconds / (3600 * 24));
     if (days === 0) return "Aujourd'hui";
     if (days === 1) return 'Hier';
