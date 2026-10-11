@@ -1,7 +1,5 @@
-venv/
-__pycache__/
-.pytest_cache/
-.env
-tests/
-essai_*.py
-uploads/
+# Fichiers de l'analyse SonarQube et des tests du pipeline
+.sonar/
+.scannerwork/
+coverage.xml
+pytest.xml

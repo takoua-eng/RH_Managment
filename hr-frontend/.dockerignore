@@ -4,3 +4,7 @@ dist/
 .vscode/
 *.log
 .git/
+
+# Fichiers de l'analyse SonarQube (cache des analyseurs et dossier de travail)
+.sonar/
+.scannerwork/
