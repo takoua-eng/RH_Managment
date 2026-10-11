@@ -93,7 +93,7 @@
       <!-- ========== Mode connexion ========== -->
       <ng-container *ngIf="mode === 'login'">
         <h2>Bon retour <span>👋</span></h2>
-        <p class="sub">Connectez-vous pour accéder à votre espace.</p>
+        <p class="sub">Connectez-vous pour accéder à votre espace CorpFlow RH.</p>
 
         <form #loginForm="ngForm" novalidate
               (ngSubmit)="loginForm.valid ? handleLogin() : loginForm.form.markAllAsTouched()">
