@@ -54,8 +54,10 @@ EN_COURS = r"(present|aujourd'?\s?hui|actuel(?:lement)?|en cours|now|current|ce 
 PERIODE = re.compile(
     DATE + r"\s*(?:-|–|—|a|au|to|jusqu'?a)\s*(?:" + DATE + "|" + EN_COURS + ")"
 )
-ANNEES_DECLAREES = re.compile(
-    r"(\d{1,2})\s*(?:\+\s*)?(?:ans?\s+d'?\s*experience|years?\s+(?:of\s+)?experience)"
+# Une expression par langue : plus lisibles qu'une seule expression avec toutes les variantes
+ANNEES_DECLAREES = (
+    re.compile(r"(\d{1,2})\s*(?:\+\s*)?ans?\s+d'?\s*experience"),          # « 5 ans d'expérience »
+    re.compile(r"(\d{1,2})\s*(?:\+\s*)?years?\s+(?:of\s+)?experience"),    # « 5 years of experience »
 )
 
 
@@ -101,9 +103,12 @@ def experience_years(text: str) -> float:
 
 def declared_experience(text: str) -> float | None:
     """Lit une mention du type '4 ans d'expérience' écrite par le candidat."""
-    m = ANNEES_DECLAREES.search(normalize(text))
-    return float(m.group(1)) if m else None
-
+    norm = normalize(text)
+    for motif in ANNEES_DECLAREES:
+        m = motif.search(norm)
+        if m:
+            return float(m.group(1))
+    return None
 
 # ---------- Niveau d'études ----------
 # 0 = inconnu, 1 = bac, 2 = bac+2, 3 = bac+3, 4 = bac+5, 5 = doctorat
