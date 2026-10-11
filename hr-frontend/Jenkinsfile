@@ -1,44 +1,56 @@
 // =====================================================================
 // Pipeline CI/CD du frontend (Angular compilé avec Node.js, servi par Nginx)
-// Qualité du code → image Docker → test de fumée → Nexus → Kubernetes
+// Même logique que le backend : compilation → qualité → livrable → image
+// → test de fumée → Nexus → Kubernetes
 // =====================================================================
+
+def sonarDisponible(String url) {
+    return sh(script: "curl -sf ${url}/api/system/status | grep -q '\"status\":\"UP\"'",
+              returnStatus: true) == 0
+}
+
 pipeline {
     agent any
 
     options {
         timestamps()
-        buildDiscarder(logRotator(numToKeepStr: '10'))
+        buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '3'))
         disableConcurrentBuilds()
         timeout(time: 40, unit: 'MINUTES')
     }
 
     triggers {
-        // Vérifie toutes les 5 minutes s'il y a de nouveaux commits sur GitHub
         pollSCM('H/5 * * * *')
     }
 
     environment {
-        REGISTRY       = '192.168.255.129:8082'
-        IMAGE          = "${REGISTRY}/hr-frontend"
-        IMAGE_TAG      = "${env.BUILD_NUMBER}"
-        TEST_CONTAINER = "hr-frontend-test-${env.BUILD_NUMBER}"
-        SONAR_URL      = 'http://192.168.255.129:9000'
+        REGISTRY        = '192.168.255.129:8082'
+        IMAGE           = "${REGISTRY}/hr-frontend"
+        BUILD_IMAGE     = "hr-frontend-compilation:${env.BUILD_NUMBER}"
+        BUILD_CONTAINER = "hr-frontend-livrable-${env.BUILD_NUMBER}"
+        TEST_CONTAINER  = "hr-frontend-test-${env.BUILD_NUMBER}"
+        SONAR_URL       = 'http://192.168.255.129:9000'
     }
 
     stages {
 
-        stage('Vérification de SonarQube') {
-            // SonarQube est démarré à la demande : on vérifie s'il est disponible
+        stage('Préparation') {
             steps {
                 script {
-                    def code = sh(
-                        script: "curl -sf ${SONAR_URL}/api/system/status | grep -q '\"status\":\"UP\"'",
-                        returnStatus: true
-                    )
-                    env.SONAR_UP = (code == 0) ? 'true' : 'false'
-                    echo(env.SONAR_UP == 'true'
-                        ? 'SonarQube est disponible : analyse de la qualité du code'
-                        : 'SonarQube est arrêté : analyse ignorée pour ce build')
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                    env.SONAR_UP  = sonarDisponible(env.SONAR_URL) ? 'true' : 'false'
+                    echo "Version de l'image : ${env.IMAGE_TAG}"
+                    echo(env.SONAR_UP == 'true' ? 'SonarQube disponible' : 'SonarQube arrêté : analyse ignorée')
+                }
+            }
+        }
+
+        stage('Compilation et tests') {
+            steps {
+                dir('hr-frontend') {
+                    // Étape de compilation du Dockerfile seule (Node.js) : dépendances, compilation
+                    // de production et vérification que index.html est bien produit
+                    sh 'docker build --target build -t "$BUILD_IMAGE" .'
                 }
             }
         }
@@ -46,12 +58,9 @@ pipeline {
         stage('Analyse SonarQube') {
             when { environment name: 'SONAR_UP', value: 'true' }
             steps {
-                // Un problème d'analyse ne bloque pas la livraison (build orange, pipeline poursuivi)
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     dir('hr-frontend') {
                         withSonarQubeEnv('sonarqube') {
-                            // Mémoire limitée : 512 Mo pour l'analyseur Java, 1 Go pour l'analyse
-                            // TypeScript (Node.js), 2 Go au total pour le conteneur
                             sh '''
                                 docker run --rm \
                                   --memory 2g \
@@ -71,7 +80,6 @@ pipeline {
                                   -Dsonar.exclusions="**/*.spec.ts,**/assets/**,**/environments/**"
                             '''
                         }
-                        // N'est atteint que si l'analyse a réussi
                         script { env.SONAR_ANALYSE_OK = 'true' }
                     }
                 }
@@ -89,10 +97,25 @@ pipeline {
             }
         }
 
-        stage('Compilation et image Docker') {
+        stage('Archivage du livrable') {
+            steps {
+                // Le site compilé est extrait de l'image de compilation, puis archivé dans Jenkins
+                // (équivalent du WAR pour le backend)
+                sh '''
+                    rm -rf "$WORKSPACE/livrable" && mkdir -p "$WORKSPACE/livrable"
+                    docker create --name "$BUILD_CONTAINER" "$BUILD_IMAGE"
+                    docker cp "$BUILD_CONTAINER:/out/." "$WORKSPACE/livrable/"
+                    docker rm "$BUILD_CONTAINER"
+                    tar -czf "hr-frontend-$IMAGE_TAG.tar.gz" -C "$WORKSPACE/livrable" .
+                '''
+                archiveArtifacts artifacts: "hr-frontend-${env.IMAGE_TAG}.tar.gz", fingerprint: true
+            }
+        }
+
+        stage('Image Docker') {
             steps {
                 dir('hr-frontend') {
-                    // La compilation Angular (Node.js) se fait dans le Dockerfile
+                    // Réutilise le cache de l'étape de compilation : Angular n'est pas recompilé
                     sh 'docker build -t "$IMAGE:$IMAGE_TAG" -t "$IMAGE:latest" .'
                 }
             }
@@ -100,11 +123,9 @@ pipeline {
 
         stage('Test de fumée') {
             steps {
-                // Démarre l'image et vérifie que Nginx sert bien l'application
                 sh '''
                     docker run -d --name "$TEST_CONTAINER" "$IMAGE:$IMAGE_TAG"
 
-                    # Attend que Nginx réponde (15 secondes au maximum)
                     for i in $(seq 1 15); do
                         if docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://127.0.0.1:8080/; then
                             break
@@ -112,7 +133,6 @@ pipeline {
                         sleep 1
                     done
 
-                    # Page d'accueil, puis une route Angular (doit renvoyer index.html, pas une 404)
                     docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://127.0.0.1:8080/
                     docker exec "$TEST_CONTAINER" wget -q -O /dev/null http://127.0.0.1:8080/dashboard/leave
                     echo "Nginx sert la page d'accueil et les routes Angular"
@@ -161,10 +181,11 @@ pipeline {
     post {
         always {
             sh 'docker logout "$REGISTRY" || true'
-            sh 'docker rmi "$IMAGE:$IMAGE_TAG" "$IMAGE:latest" || true'
+            sh 'docker rmi "$IMAGE:$IMAGE_TAG" "$IMAGE:latest" "$BUILD_IMAGE" 2>/dev/null || true'
+            sh 'rm -rf "$WORKSPACE/livrable" "$WORKSPACE"/hr-frontend-*.tar.gz || true'
         }
         success {
-            echo "Version ${IMAGE_TAG} analysée, testée, publiée et déployée"
+            echo "Version ${env.IMAGE_TAG} compilée, analysée, testée, publiée et déployée"
         }
     }
 }
