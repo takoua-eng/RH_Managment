@@ -306,7 +306,13 @@ pipeline {
             '''
         }
         success {
-            echo "Services serveur livrés en version ${env.IMAGE_TAG}"
+            script {
+                if (env.BUILD_BACKEND == 'true' || env.BUILD_IA == 'true') {
+                    echo "Services serveur livrés en version ${env.IMAGE_TAG}"
+                } else {
+                    echo 'Aucun service à livrer pour ce commit.'
+                }
+            }
         }
     }
 }
