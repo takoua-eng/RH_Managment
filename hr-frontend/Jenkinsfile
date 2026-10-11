@@ -50,17 +50,23 @@ pipeline {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     dir('hr-frontend') {
                         withSonarQubeEnv('sonarqube') {
+                            // Mémoire limitée : 512 Mo pour l'analyseur Java, 1 Go pour l'analyse
+                            // TypeScript (Node.js), 2 Go au total pour le conteneur
                             sh '''
                                 docker run --rm \
+                                  --memory 2g \
                                   -u "$(id -u):$(id -g)" \
                                   -e SONAR_HOST_URL="$SONAR_HOST_URL" \
                                   -e SONAR_TOKEN="$SONAR_AUTH_TOKEN" \
                                   -e SONAR_USER_HOME=/usr/src/.sonar \
+                                  -e SONAR_SCANNER_OPTS="-Xmx512m" \
                                   -v "$PWD:/usr/src" \
                                   sonarsource/sonar-scanner-cli \
                                   -Dsonar.projectKey=hr-frontend \
                                   -Dsonar.projectName="CorpFlow HR - Frontend" \
                                   -Dsonar.working.directory=/usr/src/.scannerwork \
+                                  -Dsonar.scm.disabled=true \
+                                  -Dsonar.javascript.node.maxspace=1024 \
                                   -Dsonar.sources=src \
                                   -Dsonar.exclusions="**/*.spec.ts,**/assets/**,**/environments/**"
                             '''
