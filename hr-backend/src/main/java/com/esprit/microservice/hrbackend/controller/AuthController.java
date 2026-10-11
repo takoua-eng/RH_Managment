@@ -22,7 +22,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    
  //todo
+ // Test de la détection des changements par le pipeline
+
     private static final String ERROR = "error";
 
     private final AuthService authService;
