@@ -54,8 +54,9 @@ pipeline {
                         docker cp "$TEST_CONTAINER:/tmp/pytest.xml" cv-matcher/pytest.xml || true
                         docker cp "$TEST_CONTAINER:/tmp/coverage.xml" cv-matcher/coverage.xml || true
                         docker rm -f "$TEST_CONTAINER" || true
-                        # Le rapport désigne /app (dans l'image) : on l'adapte au dossier analysé par SonarQube
-                        sed -i 's#<source>/app</source>#<source>/usr/src</source>#' cv-matcher/coverage.xml || true
+                        # Le rapport désigne /app ou /app/app (chemins dans l'image) :
+                        # on remplace ce début de chemin par le dossier analysé par SonarQube
+                        sed -i 's#<source>/app#<source>/usr/src#' cv-matcher/coverage.xml || true
                     '''
                     junit allowEmptyResults: true, testResults: 'cv-matcher/pytest.xml'
                 }
@@ -76,6 +77,7 @@ pipeline {
                 }
             }
         }
+
         stage('Analyse SonarQube') {
             when { environment name: 'SONAR_UP', value: 'true' }
             steps {

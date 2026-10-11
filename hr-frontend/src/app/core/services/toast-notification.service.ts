@@ -16,7 +16,7 @@ export class ToastNotificationService {
   public toasts$: Observable<ToastMessage[]> = this.toastsSubject.asObservable();
 
   public show(toast: Omit<ToastMessage, 'id'>): void {
-    const id = Math.random().toString(36).substring(2, 9);
+  const id = crypto.randomUUID();
     const fullToast: ToastMessage = {
       id,
       duration: 4000,

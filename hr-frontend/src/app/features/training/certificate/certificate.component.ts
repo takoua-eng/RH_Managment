@@ -29,8 +29,12 @@ export class CertificateComponent implements OnInit, OnDestroy {
 
   isGenerating = false;
 
+  /** Numéro affiché si aucun identifiant officiel n'est fourni : généré une seule fois. */
+  private generatedCertificateId = '';
+
   ngOnInit(): void {
     document.body.classList.add('modal-open');
+    this.generatedCertificateId = this.generateCertificateId();
   }
 
   ngOnDestroy(): void {
@@ -43,21 +47,28 @@ export class CertificateComponent implements OnInit, OnDestroy {
   }
 
   get formattedCertificateId(): string {
-    if (this.certificateId) return this.certificateId;
-    const year = new Date().getFullYear();
-    const randomNum = Math.floor(100000 + Math.random() * 900000);
-    return `CERT-${year}-${randomNum}`;
+    return this.certificateId || this.generatedCertificateId;
   }
 
   get formattedCompletionDate(): string {
     if (this.completionDate) return this.completionDate;
     if (this.endDate) return this.endDate;
-    const today = new Date();
-    return today.toLocaleDateString('fr-FR', {
+    return new Date().toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric'
     });
+  }
+
+  /**
+   * Numéro au format CERT-AAAA-NNNNNN, tiré avec le générateur cryptographique du navigateur
+   * (imprévisible, contrairement à Math.random).
+   */
+  private generateCertificateId(): string {
+    const year = new Date().getFullYear();
+    const randomValue = crypto.getRandomValues(new Uint32Array(1))[0];
+    const sixDigits = 100000 + (randomValue % 900000);
+    return `CERT-${year}-${sixDigits}`;
   }
 
   async downloadPdf(): Promise<void> {
@@ -66,8 +77,8 @@ export class CertificateComponent implements OnInit, OnDestroy {
     this.isGenerating = true;
 
     try {
-      // Wait for document fonts to finish loading
-      if (document.fonts && document.fonts.ready) {
+      // Attend la fin du chargement des polices avant la capture
+      if (document.fonts?.ready) {
         await document.fonts.ready;
       }
 
@@ -93,23 +104,23 @@ export class CertificateComponent implements OnInit, OnDestroy {
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-      const cleanTitle = (this.trainingTitle || 'Formation')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9]/g, '_');
+      const cleanTitle = this.toFileNamePart(this.trainingTitle || 'Formation');
+      const cleanName = this.toFileNamePart(this.employeeName || 'Employe');
 
-      const cleanName = (this.employeeName || 'Employe')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9]/g, '_');
-
-      const filename = `Certificat_${cleanTitle}_${cleanName}.pdf`;
-      pdf.save(filename);
+      pdf.save(`Certificat_${cleanTitle}_${cleanName}.pdf`);
     } catch (err) {
       console.error('Error generating PDF certificate:', err);
     } finally {
       this.isGenerating = false;
     }
+  }
+
+  /** Retire les accents et remplace les caractères spéciaux pour un nom de fichier sûr. */
+  private toFileNamePart(text: string): string {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '_');
   }
 
   onClose(): void {
@@ -121,4 +132,3 @@ export class CertificateComponent implements OnInit, OnDestroy {
     this.downloadOfficial.emit();
   }
 }
-

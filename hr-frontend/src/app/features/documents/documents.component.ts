@@ -33,7 +33,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   currentUser: any = null;
   isAdminOrRHOrManager = false;
   employees: Employee[] = [];
-  
+
   // Filtering & selection state
   selectedEmployeeId: number | null = null;
 
@@ -49,6 +49,9 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   selectedDoc: HrDocument | null = null;
   pdfUrl: SafeResourceUrl | null = null;
   private pdfBlobUrl: string | null = null;
+
+  loading = true;
+  errorMessage = '';
 
   private subscriptions = new Subscription();
 
@@ -67,16 +70,16 @@ export class DocumentsComponent implements OnInit, OnDestroy {
       this.authService.currentUser$.subscribe(user => {
         this.currentUser = user;
         if (user) {
-          this.isAdminOrRHOrManager = 
-            user.role === 'Administrateur' || 
-            user.role === 'RH' || 
+          this.isAdminOrRHOrManager =
+            user.role === 'Administrateur' ||
+            user.role === 'RH' ||
             user.role === 'Manager';
-          
+
           // Set default selected employee ID for normal employee
           if (!this.isAdminOrRHOrManager) {
             this.selectedEmployeeId = user.id || null;
           }
-          
+
           // Load list of employees for admin/RH dropdowns
           if (this.isAdminOrRHOrManager) {
             this.subscriptions.add(
@@ -106,13 +109,10 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     this.revokePdfUrl();
   }
 
-  loading = true;
-  errorMessage = '';
-
   loadDocuments() {
     this.loading = true;
     this.errorMessage = '';
-    
+
     if (this.isAdminOrRHOrManager) {
       if (this.selectedEmployeeId) {
         this.docService.loadDocumentsByEmployee(this.selectedEmployeeId).subscribe({
@@ -135,20 +135,18 @@ export class DocumentsComponent implements OnInit, OnDestroy {
           }
         });
       }
+    } else if (this.currentUser?.id) {
+      this.docService.loadDocumentsByEmployee(this.currentUser.id).subscribe({
+        next: () => this.loading = false,
+        error: err => {
+          console.error('Error loading personal documents:', err);
+          this.errorMessage = 'Erreur lors du chargement de vos documents.';
+          this.toastService.error('Erreur lors du chargement de vos documents.');
+          this.loading = false;
+        }
+      });
     } else {
-      if (this.currentUser && this.currentUser.id) {
-        this.docService.loadDocumentsByEmployee(this.currentUser.id).subscribe({
-          next: () => this.loading = false,
-          error: err => {
-            console.error('Error loading personal documents:', err);
-            this.errorMessage = 'Erreur lors du chargement de vos documents.';
-            this.toastService.error('Erreur lors du chargement de vos documents.');
-            this.loading = false;
-          }
-        });
-      } else {
-        this.loading = false;
-      }
+      this.loading = false;
     }
   }
 
@@ -162,9 +160,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   }
 
   applyFilter() {
-    this.filteredDocs = this.documents.filter(doc => {
-      return !this.selectedFolder || doc.type === this.selectedFolder;
-    });
+    this.filteredDocs = this.documents.filter(doc => !this.selectedFolder || doc.type === this.selectedFolder);
   }
 
   getCountByFolder(folderName: string): number {
@@ -229,22 +225,30 @@ export class DocumentsComponent implements OnInit, OnDestroy {
     this.revokePdfUrl();
 
     const isRealPdf = doc.name.toLowerCase().endsWith('.pdf');
-    if (isRealPdf) {
-      this.docService.downloadDocument(doc.id).subscribe({
-        next: (blob) => {
-          const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-          this.pdfBlobUrl = window.URL.createObjectURL(pdfBlob);
-          this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfBlobUrl);
-          this.showPreviewModal = true;
-        },
-        error: err => {
-          console.error("Failed to load PDF preview from backend:", err);
-          this.showPreviewModal = true;
-        }
-      });
-    } else {
+    if (!isRealPdf) {
       this.showPreviewModal = true;
+      return;
     }
+
+    this.docService.downloadDocument(doc.id).subscribe({
+      next: (blob) => {
+        const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+        this.pdfBlobUrl = window.URL.createObjectURL(pdfBlob);
+
+        // Contournement volontaire de la protection d'Angular, nécessaire pour afficher
+        // un PDF dans une iframe. L'adresse est une adresse « blob: » créée par le navigateur
+        // pour le PDF téléchargé depuis notre API, jamais une adresse fournie par un utilisateur.
+        // Toute autre adresse est refusée.
+        if (this.pdfBlobUrl.startsWith('blob:')) {
+          this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfBlobUrl);
+        }
+        this.showPreviewModal = true;
+      },
+      error: err => {
+        console.error('Failed to load PDF preview from backend:', err);
+        this.showPreviewModal = true;
+      }
+    });
   }
 
   downloadDoc(doc: HrDocument) {
@@ -256,7 +260,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
         a.download = doc.name;
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
+        a.remove();
         window.URL.revokeObjectURL(url);
         this.toastService.info(`Téléchargement de ${doc.name} démarré.`);
       },
