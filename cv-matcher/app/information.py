@@ -55,7 +55,7 @@ PERIODE = re.compile(
     DATE + r"\s*(?:-|–|—|a|au|to|jusqu'?a)\s*(?:" + DATE + "|" + EN_COURS + ")"
 )
 ANNEES_DECLAREES = re.compile(
-    r"(\d{1,2})\s*\+?\s*(?:ans?\s+d'?\s*experience|years?\s+(?:of\s+)?experience)"
+    r"(\d{1,2})\s*(?:\+\s*)?(?:ans?\s+d'?\s*experience|years?\s+(?:of\s+)?experience)"
 )
 
 
@@ -147,7 +147,9 @@ def extract_languages(text: str) -> set[str]:
 
 # ---------- Contacts (affichage uniquement) ----------
 
-EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# Une adresse ne commence qu'au début d'un mot, avec des longueurs bornées (norme RFC 5321) :
+# évite un temps de traitement qui exploserait sur un texte construit exprès
+EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8}")
 TELEPHONE = re.compile(r"(?:(?:\+|00)216[\s.-]?)?[2-9]\d(?:[\s.-]?\d{3}){2}")
 
 def build_profile(text: str, sections: dict[str, str]) -> dict:
