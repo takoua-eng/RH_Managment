@@ -31,7 +31,7 @@ spec:
       containers:
         - name: cv-matcher
           image: 192.168.255.129:8082/cv-matcher:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - { name: UPLOAD_DIR, value: /data/uploads }
             - { name: HF_HUB_OFFLINE, value: "1" }

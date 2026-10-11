@@ -53,7 +53,7 @@ spec:
       containers:
         - name: hr-backend
           image: 192.168.255.129:8082/hr-backend:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: hr-backend-config
